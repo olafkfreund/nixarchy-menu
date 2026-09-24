@@ -17,7 +17,6 @@ There is no build step. The shell loads the QML files as they are.
 | `providers/Extensions.qml` | The Extensions screen (on/off, setup, source). |
 | `extensions/<id>/` | Third-party extensions, one folder each. `extensions/timer` is the reference. |
 | `core/*.js` | Pure JavaScript: matcher, settings, settings tree, calculator, units, colors, emoji, files, extensions, intent. Everything testable lives here. |
-| `omarchy/MenuModel.js` | Vendored stock menu model (MIT, Omarchy). Keep in sync with Omarchy, do not restyle. |
 | `voice/`, `codex/` | Voice session (voxtype) and the Codex app-server integration. |
 | `ui/` | Result row, preview pane, key caps, waveform. |
 | `tests/` | `tst_*.qml` unit tests (qmltestrunner), `*_check.py` integration checks that drive real Quickshell components offscreen, `lint.sh`. |
@@ -47,8 +46,6 @@ bin/keystroke test          # qmltestrunner (tests/), integration checks, qmllin
 `tests/lint.sh` prints known noise from Quickshell metadata (`PanelWindow is not creatable`, `member not found on QObject` for `Style.font.*`/`Color.menu.*`); anything else is yours. Run the unit tests offscreen: `cd tests && QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input .`.
 
 To see a change in the running shell: `bin/keystroke install` copies the checkout into `~/.config/omarchy/plugins/evindor.keystroke` (no symlinks) and enables it; because the plugin is `keepLoaded`, a code change usually needs `omarchy-restart-shell` afterwards. Drive it headlessly with `bin/keystroke open "<query>"` and `omarchy-shell shell call omarchy.menu inspect '{}'`, which prints the current rows, selection and state as JSON. Do not simulate key presses on the user's desktop as a test.
-
-Record what you ran in `docs/verification.md` when you change behaviour, including what was *not* exercised.
 
 ## Build an extension
 
@@ -124,7 +121,7 @@ Most extensions need no setup. One that needs a local model, a compiled helper o
 "setup": { "run": "bin/setup", "summary": "Downloads the 40 MB model into ~/.local/share/keystroke/thing, verified by SHA-256" }
 ```
 
-The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest (see `helpers/matching-start.py`), never `curl | sh`, never `sudo`, write only under `~/.local/share/keystroke/<id>` or `~/.cache/keystroke/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
+The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest, never `curl | sh`, never `sudo`, write only under `~/.local/share/keystroke/<id>` or `~/.cache/keystroke/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
 
 ### 4. Test it
 
@@ -142,8 +139,8 @@ Open a pull request against `dev` (the branch the next release is assembled on; 
 - **A new bundled provider**: add `providers/<Name>.qml` with `id`, `name`, `icon`, `color`, `description`, `settings`, `query`; register it in `providers/Registry.qml` (`bundled` list, in display order); put logic in `core/<Name>.js` with `tests/tst_<name>.qml`; document it in `README.md` (Using it) and `docs/architecture.md`. Bundled providers default to enabled.
 - **A change to the contract** (`docs/providers.md`): adding an optional field keeps `apiVersion: 1`; anything that changes the meaning of an existing field bumps it, and `Registry.qml` must keep loading the previous version for one Omarchy release.
 - **The host** (`Keystroke.qml`): new effects go in `perform()`, new keys in the search field's `Keys.onPressed`, new IPC methods next to `ping()`/`inspect()`. Keep the dmenu protocol byte-compatible with Omarchy's `omarchy-menu-select`/`omarchy-menu-input`.
-- **Omarchy vendored code** (`omarchy/MenuModel.js`): only sync with upstream, never fork behaviour.
-- Commit messages: one line in the imperative, then why. Update `docs/verification.md` with what you ran.
+- **Omarchy's menu model** is the shell's own `$OMARCHY_PATH/shell/plugins/menu/MenuModel.js`, imported by `providers/OmarchyMenu.qml` from `file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js`. There is no vendored copy; never fork its behaviour.
+- Commit messages: one line in the imperative, then why.
 
 ## Security and trust
 

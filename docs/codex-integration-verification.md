@@ -63,7 +63,7 @@ with protocol fixtures; an actual out-of-scope approval interaction needs a user
 
 ## Latency and memory
 
-[Reproducible benchmark and raw data](../experiments/codex-cloud/results/questions.json):
+Benchmark:
 15 distinct short prompts, both tiers in alternating order, 30 completed turns,
 no tool activity. Nearest-rank p95; only 15 observations per tier.
 
@@ -91,7 +91,7 @@ regression injects process failure rather than disrupting this machine's network
 ## Speech and cleanup
 
 Vulkan voxtype remains active with Whisper small and whole-request revision.
-A [quantized turbo comparison](../experiments/speech/README.md) found no accuracy
+A quantized turbo comparison found no accuracy
 benefit on six easy synthetic phrases and higher load-inclusive latency, so small
 remains the default. Human-speech accuracy, longer dictation, resident stop latency
 and power need further measurement; no unsupported improvement claim is made.

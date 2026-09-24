@@ -169,3 +169,17 @@ Verify: `jq . keystroke.example.json` succeeds, and `bash -n bin/keystroke` succ
 - Nothing is pushed or deployed, so abandoning the branch undoes everything.
 - Runtime: the backup restores the previous plugin copy, and
   `omarchy plugin disable evindor.keystroke` restores the stock menu.
+
+## Deviations during implementation
+
+### C: surface
+- `bin/keystroke test` also no longer runs `tests/catalog_check.py`, which B deletes.
+- Because B deleted the vendored copy, the MenuModel references in `README.md` (License line), `CONTRIBUTING.md` (table row, vendored-code bullet) and `docs/architecture.md:21` now say the model is loaded from the installed shell.
+- `README.md`:
+  - The Smart Match sentence is removed from the intro.
+  - The screenshot table is deleted, because every cell was a `site/assets` image.
+- `CONTRIBUTING.md` no longer refers to `helpers/matching-start.py`.
+- `docs/providers.md`:
+  - "Smart Match stays out" is removed from Routing.
+  - The `optionLabels` paragraph is kept under a new "Enum option labels" heading, because it was not about the catalog.
+- The rsync `--exclude assets --exclude experiments` flags in `bin/keystroke` stay. They are harmless.

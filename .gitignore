@@ -1,5 +1,4 @@
 __pycache__/
-matching/engine/target/
 *.py[cod]
 .pytest_cache/
 .venv/
