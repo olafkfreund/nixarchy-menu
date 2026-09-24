@@ -56,10 +56,7 @@
       "limit": 10
     },
     "ai": {
-      "enabled": true,
-      "provider": "chatgpt",
-      "mode": "desktop",
-      "autoSend": false
+      "enabled": true
     },
     "settings": {
       "enabled": true
@@ -67,13 +64,6 @@
     "example.hello": {
       "enabled": false,
       "greeting": "Hello"
-    },
-    "codex": {
-      "enabled": true,
-      "model": "gpt-5.6-luna",
-      "fast": true,
-      "destination": "desktop",
-      "workspace": ""
     },
     "extensions": {
       "enabled": true

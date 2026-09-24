@@ -14,14 +14,14 @@ TestCase {
             ],
             paletteValues: { density: "compact", showPreview: true },
             entries: [
-                { key: "ai", name: "AI & Web Search", description: "Continue any query in Claude, ChatGPT/Codex or Google", icon: "✳", iconFont: "", color: "#e79c85",
+                { key: "files", name: "Files", description: "Files and folders under your home folder, found with fd", icon: "󰈞", iconFont: "", color: "#e5c07b",
                   source: "bundled", extensionId: "", enabled: true,
                   schemas: [
-                      { key: "provider", type: "enum", label: "Preferred assistant", "default": "chatgpt", options: ["chatgpt", "claude"], description: "Listed first among the fallbacks" },
-                      { key: "mode", type: "enum", label: "Open conversations in", "default": "desktop", options: ["desktop", "cli", "browser"] },
-                      { key: "autoSend", type: "boolean", label: "Send immediately in the browser", "default": false }
+                      { key: "searchMode", type: "enum", label: "Search in the main palette", "default": "fuzzy", options: ["fuzzy", "literal", "prefix"],
+                        description: "Type ~ for fuzzy file and folder search in any mode. Searches under your home folder." },
+                      { key: "hidden", type: "boolean", label: "Include hidden entries", "default": false }
                   ],
-                  values: { provider: "chatgpt", mode: "desktop", autoSend: false } },
+                  values: { searchMode: "fuzzy", hidden: false } },
                 { key: "clipboard", name: "Clipboard History", description: "Uses Omarchy's existing history", icon: "", iconFont: "", color: "", source: "bundled", extensionId: "", enabled: true,
                   schemas: [{ key: "limit", type: "number", label: "Maximum entries", "default": 100, min: 1, max: 300, integer: true }], values: { limit: 100 } },
                 { key: "hello", name: "Hello", description: "Says hello", icon: "", iconFont: "", color: "", source: "extension", extensionId: "hello", dir: "/x/extensions/hello", local: false, loaded: false, enabled: false,
@@ -37,32 +37,32 @@ TestCase {
     function titles(rows) { return rows.map(function(r) { return r.title }) }
 
     function test_abbreviations_reach_a_deep_setting_from_the_root() {
-        // The setting's config key is `provider`, so "pro"/"prv" reach it
-        // through the key even though its label says "assistant".
-        var abbreviations = ["prefp", "nixsepro", "setaiprv", "preferred", "ai prov", "prov ai", "aiprefp", "pref"]
+        // The setting's config key is `searchMode`, so "mo"/"mod" reach it
+        // through the key even though its label never says "mode".
+        var abbreviations = ["filmod", "nixsefimo", "setfilmo", "searchmode", "fil mode", "mode fil", "filsemo", "smod"]
         for (var i = 0; i < abbreviations.length; i++) {
             var rows = search("", abbreviations[i])
             verify(rows.length > 0, abbreviations[i] + " found nothing")
-            compare(rows[0].title, "Preferred assistant", abbreviations[i])
-            compare(rows[0].subtitle, "nixarchy-menu Settings › AI & Web Search")
+            compare(rows[0].title, "Search in the main palette", abbreviations[i])
+            compare(rows[0].subtitle, "nixarchy-menu Settings › Files")
             compare(rows[0].action.type, "navigate")
-            compare(rows[0].action.scope, "settings/ai/provider")
-            compare(rows[0].accessory, "chatgpt")
+            compare(rows[0].action.scope, "settings/files/searchMode")
+            compare(rows[0].accessory, "fuzzy")
         }
     }
     function test_choices_are_reachable_and_selectable_from_anywhere() {
-        var rows = search("", "prefcla")
-        compare(rows[0].title, "Claude")
+        var rows = search("", "sealit")
+        compare(rows[0].title, "Literal")
         compare(rows[0].icon, "○")
         compare(rows[0].action.type, "setting")
-        compare(rows[0].action.value, "claude")
-        compare(rows[0].action.path, ["providers", "ai"])
-        compare(rows[0].previewDetail, "nixarchy-menu Settings › AI & Web Search › Preferred assistant › Claude")
-        rows = search("settings", "ai cla")
-        compare(rows[0].title, "Claude")
-        compare(rows[0].subtitle, "AI & Web Search › Preferred assistant")          // breadcrumb below the current screen
-        rows = search("settings/ai", "cla")
-        compare(rows[0].subtitle, "Preferred assistant")
+        compare(rows[0].action.value, "literal")
+        compare(rows[0].action.path, ["providers", "files"])
+        compare(rows[0].previewDetail, "nixarchy-menu Settings › Files › Search in the main palette › Literal")
+        rows = search("settings", "fil lit")
+        compare(rows[0].title, "Literal")
+        compare(rows[0].subtitle, "Files › Search in the main palette")          // breadcrumb below the current screen
+        rows = search("settings/files", "lit")
+        compare(rows[0].subtitle, "Search in the main palette")
         rows = search("", "dens comf")
         compare(rows[0].title, "Comfortable")
         compare(rows[0].action.path, ["palette"])
@@ -81,8 +81,8 @@ TestCase {
         var root = SettingsTree.rows(t.nodes, "", "")
         compare(titles(root), ["nixarchy-menu Settings"])
         compare(root[0].score, 20)
-        compare(titles(SettingsTree.rows(t.nodes, "settings", "")), ["Appearance", "Open config file", "Learn nixarchy-menu", "AI & Web Search", "Clipboard History", "Hello", "broken"])
-        compare(titles(SettingsTree.rows(t.nodes, "settings/ai", "")), ["Enabled", "Preferred assistant", "Open conversations in", "Send immediately in the browser"])
+        compare(titles(SettingsTree.rows(t.nodes, "settings", "")), ["Appearance", "Open config file", "Learn nixarchy-menu", "Files", "Clipboard History", "Hello", "broken"])
+        compare(titles(SettingsTree.rows(t.nodes, "settings/files", "")), ["Enabled", "Search in the main palette", "Include hidden entries"])
         var hello = SettingsTree.rows(t.nodes, "settings/hello", "")
         compare(hello[0].title, "Enabled")
         compare(hello[0].confirm, "Turn on Hello?")
@@ -91,11 +91,11 @@ TestCase {
         compare(hello[1].action.type, "navigate")
         compare(hello[1].action.scope, "extensions/hello")
         compare(SettingsTree.rows(t.nodes, "settings/hello", "manext").length, 0)   // "Manage extension" is list-only, never a search hit
-        var options = SettingsTree.rows(t.nodes, "settings/ai/provider", "").map(function(r) { return r.title + " " + r.icon })
-        compare(options, ["Chatgpt ✓", "Claude ○"])
+        var options = SettingsTree.rows(t.nodes, "settings/files/searchMode", "").map(function(r) { return r.title + " " + r.icon })
+        compare(options, ["Fuzzy ✓", "Literal ○", "Prefix ○"])
         verify(t.screens["settings/clipboard/limit"] !== undefined)
         compare(t.screens["settings/clipboard/limit"].value, 100)
-        compare(t.screens["settings/ai/provider"], undefined)
+        compare(t.screens["settings/files/searchMode"], undefined)
         var seen = ({})
         for (var i = 0; i < t.nodes.length; i++) { verify(!seen[t.nodes[i].id], "duplicate id " + t.nodes[i].id); seen[t.nodes[i].id] = true }
     }
@@ -169,6 +169,6 @@ TestCase {
     function test_unrelated_queries_find_nothing() {
         compare(search("", "chrome").length, 0)
         compare(search("", "zzzz").length, 0)
-        compare(search("settings/clipboard", "prefp").length, 0)                      // scoped search stays inside its subtree
+        compare(search("settings/clipboard", "filmod").length, 0)                      // scoped search stays inside its subtree
     }
 }

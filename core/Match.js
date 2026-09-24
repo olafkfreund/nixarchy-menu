@@ -12,8 +12,8 @@
 // on the title itself always sorts first.
 //
 // Queries with several words are AND-ed, each word scored on its own, so
-// "ai prov" finds "AI & Web Search › Preferred assistant" in either order.
-// Typing "nixsepro" walks the path nixarchy-menu Settings › … › provider: the
+// "fil mode" finds "Files › Search in the main palette" in either order.
+// Typing "nixsefimo" walks the path nixarchy-menu Settings › Files › … › searchMode: the
 // path is one haystack, and letters may jump from word start to word start.
 
 var TIERS = { answer: 3, item: 2, fallback: 1 }
@@ -257,7 +257,7 @@ function wordPrefixed(terms, text) {
 // title: the row's own name. keywords: identifiers a user may abbreviate
 // (aliases, ids, config keys, option values), fuzzy like the title. path: the
 // breadcrumb ending in the title, for rows reachable through submenus
-// ("nixarchy-menu Settings › AI & Web Search › Preferred assistant").
+// ("nixarchy-menu Settings › Files › Search in the main palette").
 // description: synonyms and prose, matched by word prefix only.
 function match(query, title, keywords, path, description) {
   var q = String(query || "").trim()

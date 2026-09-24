@@ -1200,10 +1200,6 @@ Item {
   }
 
 
-  function inspectConversation() {
-    var c = providerRegistry.bundled.find(x => x.provider.id === "codex").session
-    return JSON.stringify({ threadId: c.threadId, phase: c.phase, ready: c.server.ready, error: c.error, activity: c.activity, messages: c.messages, draft: c.draft, firstTextMs: c.firstTextMs, lastMs: c.lastMs })
-  }
   function inspectApplications() {
     var entries = root.appLibrary ? root.appLibrary.sortedEntries("") : []
     return JSON.stringify({ shell: !!root.shell, shellPluginId: root.shell ? root.shell.pluginId : "",

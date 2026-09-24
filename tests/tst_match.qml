@@ -7,8 +7,8 @@ import "../core/SmartMatch.js" as Smart
 
 TestCase {
     name: "MatchAndRank"
-    readonly property string aiPath: "nixarchy-menu Settings › AI & Web Search › Preferred assistant"
-    readonly property string aiKeywords: "provider chatgpt claude"
+    readonly property string filesPath: "nixarchy-menu Settings › Files › Search in the main palette"
+    readonly property string filesKeywords: "searchMode fuzzy literal prefix"
 
     function test_word_starts_and_exact_titles_rank_first() {
         verify(Match.match("chrome", "Google Chrome") > 95)
@@ -33,20 +33,20 @@ TestCase {
         verify(Match.match("Ünïcode", "ünïCODE stuff") > 95)
     }
     function test_paths_and_keywords_are_searchable_but_rank_below_titles() {
-        var onTitle = Match.match("assist", "Preferred assistant", aiKeywords, aiPath)
-        var viaPath = Match.match("nixarchy", "Preferred assistant", aiKeywords, aiPath)
-        var viaKeywords = Match.match("chatgpt", "Preferred assistant", aiKeywords, aiPath)
+        var onTitle = Match.match("palette", "Search in the main palette", filesKeywords, filesPath)
+        var viaPath = Match.match("nixarchy", "Search in the main palette", filesKeywords, filesPath)
+        var viaKeywords = Match.match("literal", "Search in the main palette", filesKeywords, filesPath)
         verify(onTitle > viaPath)
         verify(viaPath > viaKeywords)
         verify(viaKeywords > 0)
         verify(Match.match("chrom", "Google Chrome") > Match.match("chrom", "Default browser", "Chrome"))
     }
     function test_abbreviations_walk_the_breadcrumb() {
-        var abbreviations = ["prefp", "nixsepro", "setaiprv", "nmspa", "ai prov", "prov ai"]
+        var abbreviations = ["filmod", "nixsefimo", "setfilmo", "nmsfsm", "fil mode", "mode fil"]
         for (var i = 0; i < abbreviations.length; i++)
-            verify(Match.match(abbreviations[i], "Preferred assistant", aiKeywords, aiPath) > 0, abbreviations[i])
-        compare(Match.match("ai prov", "Preferred assistant", aiKeywords, aiPath), Match.match("prov ai", "Preferred assistant", aiKeywords, aiPath))
-        compare(Match.match("prefp", "Power profiles", "", "Setup › Power › Power profiles"), 0)
+            verify(Match.match(abbreviations[i], "Search in the main palette", filesKeywords, filesPath) > 0, abbreviations[i])
+        compare(Match.match("fil mode", "Search in the main palette", filesKeywords, filesPath), Match.match("mode fil", "Search in the main palette", filesKeywords, filesPath))
+        compare(Match.match("filmod", "Power profiles", "", "Setup › Power › Power profiles"), 0)
         verify(Match.match("sysshut", "Shutdown", "", "System › Shutdown") > 80)
         verify(Match.match("shutdown", "Shutdown", "", "System › Shutdown") > 115)
     }
@@ -58,7 +58,7 @@ TestCase {
         compare(Match.match("e", "Clipboard History", "", "", prose), 0)                              // single letters do not search prose
         verify(Match.match("omarchy hist", "Clipboard History", "", "", prose) > 0)
         verify(Match.match("browser", "Google Chrome", "", "", "Web Browser Access the Internet") > 0)
-        compare(Match.match("chrome", "Browser", "", "nixarchy-menu Settings › AI & Web Search › Open conversations in › Browser", "mode"), 0)
+        compare(Match.match("chrome", "Literal", "", "nixarchy-menu Settings › Files › Search in the main palette › Literal", "searchMode"), 0)
     }
     function test_tiers_dominate_scores_and_frecency() {
         var rows = [

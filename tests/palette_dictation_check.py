@@ -56,6 +56,9 @@ Item {
   function cancel() { phase = "idle" }
 }
 ''')
+    # The back-navigation checks need a provider view: Translate's, which ships off.
+    (work/'.config/omarchy').mkdir(parents=True)
+    (work/'.config/omarchy/nixarchy-menu.json').write_text(json.dumps({"version": 1, "providers": {"translate": {"enabled": True}}}))
     helper=work/'copy.py'
     helper.write_text('import pathlib,sys\np=pathlib.Path(__file__).parent\n(p/sys.argv[1]).write_text(sys.stdin.read() if sys.argv[1]=="clipboard" else "pasted")\n')
     cfg=work/'shell.qml'
@@ -127,7 +130,7 @@ ShellRoot {
       palette.selected = found; palette.selectionTouched = true
       palette.activate(true)
       test.stage = 2
-    } else if (test.stage === 2 && !palette.testTransfer.busy) {
+    } else if (test.stage === 2 && !palette.testTransfer.busy && palette.registry.services["translate"] && palette.registry.services["translate"].instance) {
       test.check(!palette.opened, "fallback copies and closes normal palette")
       palette.open('{"query":"typed replacement"}')
       palette.runQuery()
@@ -135,15 +138,15 @@ ShellRoot {
       test.check(copies.length === 1 && copies[0].action.text === "typed replacement", "new query forgets prior speech")
       var selected = palette.selected
       palette.voiceRawText = "Original spoken request, please."
-      palette.showProviderView("codex")
+      palette.showProviderView("translate")
       palette.voiceRawText = "" // A follow-up voice session clears the host transcript.
-      test.check(palette.providerViewActive, "conversation opens inside palette")
+      test.check(palette.providerViewActive, "provider view opens inside palette")
       test.check(palette.goBack(), "host handles back from provider view")
       test.check(palette.opened && !palette.providerViewActive && palette.testSearch.text === "typed replacement" && palette.selected === selected, "back restores results and selection without closing")
       test.check(palette.voiceRawText === "Original spoken request, please.", "back restores original query prose after voice follow-ups")
-      palette.open('{"scope":"codex","title":"Codex"}')
-      palette.showProviderView("codex");palette.goBack()
-      test.check(palette.opened && palette.scope === "codex", "back keeps the parent provider scope")
+      palette.open('{"scope":"translate","title":"Translate"}')
+      palette.showProviderView("translate");palette.goBack()
+      test.check(palette.opened && palette.scope === "translate", "back keeps the parent provider scope")
       console.log("PASS: dictation keys, final correction, cancellation, raw prose, model bypass")
       Qt.quit(); test.stage = 3
     }

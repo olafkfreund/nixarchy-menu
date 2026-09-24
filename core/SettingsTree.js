@@ -6,8 +6,8 @@
 // palette schema and the provider registry into nodes; rows() lists one
 // screen (empty query) or searches every screen below the current one (any
 // query), so a choice three levels down is reachable from the palette root by
-// typing through its breadcrumb: "nixsepro" → nixarchy-menu Settings › AI & Web
-// Search › Preferred assistant (the setting's key is `provider`).
+// typing through its breadcrumb: "nixsefimo" → nixarchy-menu Settings › Files ›
+// Search in the main palette (the setting's key is `searchMode`).
 //
 // Scopes: "" (palette root) › settings › settings/palette | settings/<key>
 //         › settings/palette/<setting> | settings/<key>/<setting>

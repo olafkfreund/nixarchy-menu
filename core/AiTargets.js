@@ -1,80 +1,91 @@
 .pragma library
 
-// Hand a prompt to an assistant without the clipboard. Every link below was
-// verified on 2026-09-06 (Omarchy 4.0.2) by opening it and reading the window:
-//
-//   claude-desktop 1.40609.1   claude://claude.ai/new?q=<prompt>&surface=chat
-//                              opens a new chat with the prompt in the composer.
-//                              It is the link Anthropic's own GNOME search
-//                              provider builds (resources/gnome-search-provider/
-//                              searchProvider.js, LaunchSearch). The app rejects
-//                              a q that starts with "/" (slash commands), so a
-//                              leading slash is padded with a space.
-//                              claude://code/new?q=<prompt> starts a Claude Code
-//                              session the same way.
-//   openai-codex-desktop       The Linux "ChatGPT" app is the Codex app.
-//   26.901                     codex://threads/new?prompt=<prompt> opens a new
-//                              Codex thread in the current project with the
-//                              prompt in the composer. It is the link OpenAI's
-//                              own login page uses. Handing it a chatgpt.com URL
-//                              only opens a signed-out tab in its embedded
-//                              browser, so browser mode uses the real browser.
-//   chatgpt.com                ?prompt= prefills; ?q= sends immediately.
-//   claude.ai                  /new?q= prefills; there is no auto-send form.
-//
+// Hand a query to the user's default coding agent, to Nixi, or to Google.
 // Nothing here runs at query time except string building; activation is always
-// an explicit Enter.
+// an explicit Enter, and every agent hand-off asks first (see agentRow).
 
 var MAX_PROMPT = 2000
 
+// Every id omarchy-agent launches ($OMARCHY_PATH/bin/omarchy-agent), with the
+// binary it runs. Antigravity is launched without the prompt (`agy` alone).
+var AGENTS = {
+  "claude":       { name: "Claude Code", bin: "claude" },
+  "codex":        { name: "Codex", bin: "codex" },
+  "opencode":     { name: "OpenCode", bin: "opencode" },
+  "gemini":       { name: "Gemini CLI", bin: "gemini" },
+  "copilot":      { name: "GitHub Copilot", bin: "copilot" },
+  "crush":        { name: "Crush", bin: "crush" },
+  "grok":         { name: "Grok", bin: "grok" },
+  "pi":           { name: "Pi", bin: "pi" },
+  "omp":          { name: "Oh My Pi", bin: "omp" },
+  "antigravity":  { name: "Antigravity", bin: "agy", promptless: true },
+  "cursor-agent": { name: "Cursor CLI", bin: "cursor-agent" },
+  "hermes":       { name: "Hermes", bin: "hermes" },
+  "muse":         { name: "Muse Code", bin: "muse" },
+  "openclaw":     { name: "OpenClaw", bin: "omarchy-launch-openclaw" }
+}
+
+// omarchy-agent refuses to launch unless the agent's id is itself a command
+// (`omarchy-cmd-missing "$agent"`), whatever binary it then runs, so an agent
+// counts as installed only when both are on PATH. For antigravity (agy) and
+// openclaw that shows "not installed" instead of a launch that fails
+// (nixarchy#949).
+function commandsFor(agentId) {
+  var agent = AGENTS[agentId]
+  if (!agent) return []
+  return agent.bin === agentId ? [agentId] : [agentId, agent.bin]
+}
+
+// found: command name -> true, for the commands commandsFor() listed.
+function isInstalled(agentId, found) {
+  var commands = commandsFor(agentId)
+  return commands.length > 0 && commands.every(function(c) { return found && found[c] === true })
+}
+
+var PICKER = { type: "navigate", scope: "omarchy/setup.default.agent", title: "Default Agent" }
+
+// Trimmed and bounded. A leading "/" would be a slash command and a leading "-"
+// an option to crush and pi (nixarchy#949), so both are padded with a space.
 function clip(prompt) {
   var text = String(prompt === undefined || prompt === null ? "" : prompt).trim().slice(0, MAX_PROMPT)
-  return text.charAt(0) === "/" ? " " + text : text
+  return /^[\/-]/.test(text) ? " " + text : text
 }
 
-function encode(prompt) { return encodeURIComponent(clip(prompt)) }
-
-function claudeDesktopUrl(prompt) { return "claude://claude.ai/new?q=" + encode(prompt) + "&surface=chat" }
-function claudeCodeUrl(prompt) { return "claude://code/new?q=" + encode(prompt) }
-function codexDesktopUrl(prompt) { return "codex://threads/new?prompt=" + encode(prompt) }
-function claudeWebUrl(prompt) { return "https://claude.ai/new?q=" + encode(prompt) }
-function chatgptWebUrl(prompt, autoSend) { return "https://chatgpt.com/?" + (autoSend ? "q=" : "prompt=") + encode(prompt) }
 function googleUrl(query) { return "https://www.google.com/search?q=" + encodeURIComponent(String(query || "").trim()).replace(/%20/g, "+") }
 
-// Prefer the app's own launcher when it is on PATH (the scheme handler may not
-// be registered in mimeapps.list); otherwise let xdg-open resolve the scheme.
-function openLink(bin, url, available) {
-  return available && available[bin] ? { type: "exec", argv: [bin, url] } : { type: "url", url: url }
+// The "Ask <agent>" row's own fields; the provider adds section, tier and score.
+function agentRow(agentId, installed, text) {
+  var id = String(agentId || "").trim()
+  if (!id)
+    return { title: "Choose a default agent", subtitle: "Pick the coding agent that answers from here", verb: "Open", action: PICKER }
+  var agent = AGENTS[id]
+  if (!agent)
+    return { title: "Default agent “" + id + "” is not supported here", subtitle: "Choose another in Setup › Default Agent", disabled: true }
+  if (!installed)
+    return { title: agent.name + " is not installed", subtitle: "Choose an installed agent", verb: "Open", action: PICKER }
+  var prompt = clip(text)
+  return {
+    title: "Ask " + agent.name,
+    subtitle: "Opens " + agent.name + " in a terminal · " + (agent.promptless ? "opens without your text" : "runs without asking"),
+    verb: "Open " + agent.name,
+    action: agent.promptless ? { type: "exec", argv: ["omarchy-agent"] } : { type: "exec", argv: ["omarchy-agent-prompt", prompt] },
+    confirm: "Ask " + agent.name + "?",
+    confirmDetail: (agent.promptless ? agent.name + " opens without your text." : prompt) + "\n\n" + agent.name + " starts with automatic approval and can run commands without asking.",
+    confirmText: "Open " + agent.name
+  }
 }
 
-// One row plan per assistant. `available` maps binary name -> true for
-// claude-desktop, chatgpt (Codex app), claude (CLI) and codex (CLI).
-function plan(assistant, mode, autoSend, available, prompt) {
-  var avail = available || {}
-  var claude = assistant === "claude"
-  if (mode === "cli") {
-    var cli = claude ? "claude" : "codex"
-    if (avail[cli])
-      return { id: assistant, target: cli + "-cli", title: claude ? "Ask Claude Code" : "Ask Codex",
-               subtitle: "Terminal · new " + cli + " session with your prompt", verb: "Open terminal",
-               effect: { type: "exec", argv: ["omarchy-launch-terminal", cli, clip(prompt)] } }
+// `nixi --ask` needs nixi-nixarchy#37. Without it (canAsk false), open Nixi
+// with the question on the clipboard and say so.
+function nixiRow(text, canAsk) {
+  var prompt = clip(text)
+  return {
+    title: "Ask Nixi",
+    subtitle: canAsk ? "Nixi asks before it runs anything" : "Opens Nixi with your question on the clipboard",
+    verb: "Ask",
+    action: canAsk ? { type: "exec", argv: ["nixi", "--ask", prompt] } : { type: "compound", actions: [
+      { type: "copy", text: prompt },
+      { type: "exec", argv: ["nixi"] },
+      { type: "notify", glyph: "󰅍", headline: "Question copied", body: "Paste it into Nixi with Ctrl+V" } ] }
   }
-  if (mode === "desktop") {
-    if (claude && avail["claude-desktop"])
-      return { id: assistant, target: "claude-desktop", title: "Ask Claude",
-               subtitle: "Claude desktop · new chat, prompt ready to send", verb: "Open Claude",
-               effect: openLink("claude-desktop", claudeDesktopUrl(prompt), avail) }
-    if (!claude && avail["chatgpt"])
-      return { id: assistant, target: "codex-desktop", title: "Ask Codex",
-               subtitle: "Codex desktop · new thread, prompt ready to send", verb: "Open Codex",
-               effect: openLink("chatgpt", codexDesktopUrl(prompt), avail) }
-  }
-  var why = mode === "browser" ? "" : (mode === "cli" ? " · CLI not installed" : " · desktop app not installed")
-  if (claude)
-    return { id: assistant, target: "claude-web", title: "Ask Claude",
-             subtitle: "claude.ai · prompt ready to send" + why, verb: "Open Claude",
-             effect: { type: "url", url: claudeWebUrl(prompt) } }
-  return { id: assistant, target: "chatgpt-web", title: "Ask ChatGPT",
-           subtitle: "chatgpt.com · " + (autoSend ? "sends your prompt" : "prompt ready to send") + why, verb: "Open ChatGPT",
-           effect: { type: "url", url: chatgptWebUrl(prompt, autoSend) } }
 }

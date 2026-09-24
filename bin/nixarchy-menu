@@ -94,7 +94,6 @@ case "${1:-help}" in
     python3 "$ROOT/tests/matching_engine_check.py" --engine "$engine/bin/keystroke-matching" --model-dir "$model"
     python3 "$ROOT/tests/voice_session_check.py"
     python3 "$ROOT/tests/clipboard_transfer_check.py"
-    python3 "$ROOT/tests/codex_session_check.py"
     python3 "$ROOT/tests/palette_dictation_check.py"
     python3 "$ROOT/tests/tz_helper_check.py"
     python3 "$ROOT/tests/palette_extensions_check.py"
