@@ -63,3 +63,10 @@ spec: spec/2026-09-24-5-plugin-help-rows.md
 
 ## Rollback
 Revert the commit. The menu shows today's rows.
+
+## Razer results (2026-09-24)
+- **No default agent, "faster":** "Make it faster" is hidden, and Speed Test, Disk Speed Test, Quick actions and Disks show. On the main build the same search offers "Make it faster", which is the bug.
+- **Default agent claude, "faster":** "Make it faster" ranks first. Activating it opens the confirm sheet ("Ask your default agent?", the label, the auto-approve warning, Ask/Cancel). No agent process started; a kill-guard watched for 15 s and fired on nothing.
+- **Lone `?`:** "Ask Nixi / Open Nixi" appears under "Continue with", tier answer. No empty preview is visible.
+- **Load gap:** typed within about 1 s of opening, Omarchy rows appear only once the menu has loaded. Main shows the same gap, so it is not caused by this change.
+- **Not reproduced:** one early no-agent run showed no Omarchy rows even after 6 s. Four later runs on this build and two on main did not repeat it.
