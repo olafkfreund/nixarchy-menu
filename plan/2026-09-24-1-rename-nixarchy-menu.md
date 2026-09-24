@@ -247,3 +247,9 @@ and `.github/PULL_REQUEST_TEMPLATE.md`.
 - `rg` treats `tests/tst_extensions.qml` as binary and silently skips it. It was edited by hand, and the lead's reference search uses `rg -a`.
 - `extensions/browser-search/extension.json` keeps `"author": "Keystroke contributors"` as upstream credit.
 - QML: 266 passed, 0 failed. That is 265 plus the legacy voice-block case.
+
+### H: docs
+- `bin/nixarchy-menu` rsync also excludes `intent`, `spec` and `plan`. #2's razer test showed they were copied into the plugin dir.
+- README: the "Codex inside Keystroke" section is folded, verbatim apart from the name, into Providers. "What it does" became the "keys and what you can type" section. "Learn nixarchy-menu" says it opens this README. The Enable section notes that the old Keystroke state is copied on first start and never changed.
+- The fuzzy example in the README and `docs/architecture.md:108` is `nixsepro`, matching G's fixtures.
+- Links to `evindor/keystroke-calpad` (someone else's repo) are kept as credit.
