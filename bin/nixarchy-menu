@@ -36,8 +36,26 @@ stage_plugin() {
   chmod 755 "$STAGE"  # mktemp -d makes it 0700
 }
 
+# nixarchy manages the plugin (programs.nixarchy.defaultPlugins.menu): the
+# target is Home Manager's link into the store. A copy would outrank the
+# declared pin, and removing it lasts only until the next activation
+# (olafkfreund/nixarchy#946).
+refuse_if_managed() {
+  [[ -L $TARGET && $(readlink -f "$TARGET") == /nix/store/* ]] || return 0
+  cat >&2 <<MSG
+nixarchy-menu: $TARGET is managed by nixarchy
+(programs.nixarchy.defaultPlugins.menu), so '$1' would fight Home Manager.
+  - To try a local build: point nixarchy's nixarchy-menu input at this checkout
+    (nix build --override-input nixarchy-menu path:$ROOT ...).
+  - To go back to a hand install: set defaultPlugins.menu = false, rebuild,
+    then run '$0 $1' again.
+MSG
+  exit 1
+}
+
 case "${1:-help}" in
   install)
+    refuse_if_managed install
     stage_plugin
     trap 'rm -rf "$STAGE"' EXIT
     omarchy plugin validate "$STAGE"
@@ -60,6 +78,7 @@ case "${1:-help}" in
     echo "nixarchy-menu is now the Omarchy menu. Super+Space and every omarchy-menu caller route to it."
     ;;
   uninstall)
+    refuse_if_managed uninstall
     omarchy plugin disable "$ID" || true
     rm -rf "$TARGET"
     omarchy-shell shell rescanPlugins >/dev/null
@@ -105,6 +124,7 @@ case "${1:-help}" in
     python3 "$ROOT/tools/check_extensions.py"
     python3 "$ROOT/tests/hotkeys_check.py"
     python3 "$ROOT/tests/migrate_state_check.py"
+    python3 "$ROOT/tests/install_guard_check.py"
     "$ROOT/tests/lint.sh"
     ;;
   help|-h|--help) usage ;;
