@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: 3
 spec: spec/2026-09-24-3-flake-nixarchy-wiring.md
 ---
