@@ -5,7 +5,7 @@
   "version": "1.4.4",
   "author": "olafkfreund",
   "license": "MIT",
-  "description": "A Raycast-style command palette that replaces the Omarchy menu on nixarchy, with voice, Codex and community extensions",
+  "description": "A Raycast-style command palette that replaces the Omarchy menu on nixarchy, with voice and community extensions",
   "homepage": "https://github.com/olafkfreund/nixarchy-menu",
   "kinds": [
     "menu",

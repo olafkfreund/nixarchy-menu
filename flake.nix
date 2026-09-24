@@ -1,5 +1,5 @@
 {
-  description = "nixarchy-menu -- a Raycast-style command palette Omarchy plugin, with Smart Match, voice, Codex and extensions";
+  description = "nixarchy-menu -- a Raycast-style command palette Omarchy plugin, with Smart Match, voice and extensions";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -95,7 +95,7 @@
             pkgs.runCommand "nixarchy-menu"
               {
                 meta = with pkgs.lib; {
-                  description = "Omarchy menu plugin: command palette, Smart Match, voice, Codex and extensions";
+                  description = "Omarchy menu plugin: command palette, Smart Match, voice and extensions";
                   homepage = "https://github.com/olafkfreund/nixarchy-menu";
                   license = licenses.mit;
                   platforms = platforms.linux;
@@ -106,7 +106,7 @@
                 mkdir -p "$out"
                 cp "$src"/manifest.json "$src"/LICENSE "$out/"
                 cp "$src"/*.qml "$out/"
-                cp -r "$src"/core "$src"/providers "$src"/ui "$src"/voice "$src"/codex "$out/"
+                cp -r "$src"/core "$src"/providers "$src"/ui "$src"/voice "$out/"
                 cp -r "$src"/extensions "$out/"
                 cp -r "$src"/helpers "$out/"
                 mkdir -p "$out/matching"
@@ -278,7 +278,6 @@
                          tests/catalog_check.py \
                          tests/applications_check.py \
                          tests/voice_session_check.py \
-                         tests/codex_session_check.py \
                          tests/matching_session_check.py \
                          tests/clipboard_transfer_check.py \
                          tests/files_check.py \

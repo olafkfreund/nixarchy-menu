@@ -17,7 +17,7 @@ There is no build step. The shell loads the QML files as they are.
 | `providers/Extensions.qml` | The Extensions screen (on/off, setup, source). |
 | `extensions/<id>/` | Third-party extensions, one folder each. `extensions/timer` is the reference. |
 | `core/*.js` | Pure JavaScript: matcher, settings, settings tree, calculator, units, colors, emoji, files, extensions, intent. Everything testable lives here. |
-| `voice/`, `codex/` | Voice session (voxtype) and the Codex app-server integration. |
+| `voice/` | Voice session (voxtype). |
 | `ui/` | Result row, preview pane, key caps, waveform. |
 | `tests/` | `tst_*.qml` unit tests (qmltestrunner), `*_check.py` integration checks that drive real Quickshell components offscreen, `lint.sh`. |
 | `docs/` | Contract, architecture, verification log. |
