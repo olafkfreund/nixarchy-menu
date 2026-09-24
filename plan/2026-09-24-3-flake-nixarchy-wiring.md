@@ -261,3 +261,8 @@ Owns:
   - sandbox `--rebuild`: 20/20
 - **Out of scope:** a separate config-load ordering race under extreme contention (one core shared five ways) is filed as #12.
 - **Process:** L's first pressure run used stress-ng on all CPUs of p620, the user's desktop. The lead stopped it; later runs were pinned to 4 cores.
+
+### CI fix 2: lint actually lints in the sandbox (lead)
+- **Problem:** the sandbox `lint` check passed while qmllint printed "Failed to import QtQuick/Quickshell…" for every file. Without Qt import paths it resolves nothing and only warns, so the check was vacuous.
+- **Fix:** `tests/lint.sh` turns each `QML2_IMPORT_PATH` entry into a qmllint `-I`, and the flake's lint check sets `QML2_IMPORT_PATH` to qtdeclarative's and quickshell's `lib/qt-6/qml`.
+- **Result:** 0 "Failed to import", 264 real warnings, and the check passes. Warnings do not fail qmllint, as on a host.

@@ -229,6 +229,9 @@
               ''
                 export HOME=$TMPDIR
                 export OMARCHY_PATH=${omarchy}
+                # Without these qmllint cannot resolve QtQuick/Quickshell in the
+                # sandbox and only warns "Failed to import", checking nothing.
+                export QML2_IMPORT_PATH=${pkgs.qt6.qtdeclarative}/lib/qt-6/qml:${pkgs.quickshell}/lib/qt-6/qml
                 bash ${checkSrc}/tests/lint.sh
                 touch $out
               '';
