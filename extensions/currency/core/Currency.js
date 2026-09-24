@@ -1,6 +1,6 @@
 .pragma library
 
-// Currency conversion for the Keystroke palette: the query shapes, the
+// Currency conversion for the nixarchy-menu palette: the query shapes, the
 // EUR-based cross rates, the cache the rates live in, when to refresh it,
 // and the rows. Pure functions; Service.qml owns the curl process and the
 // files. tests/tst_currency.qml covers everything here.
@@ -125,7 +125,7 @@ function shouldFetch(cache, nowMs, fetching, failedAt) {
 // the only arguments, and they never come from the user.
 var FETCH_SCRIPT = 'mkdir -p -- "$1" "$2" && exec curl -sS --fail --max-time ' + TIMEOUT_S + ' -- ' + URL
 function fetchArgv(cacheDir, stateDir) {
-  return ["bash", "-c", FETCH_SCRIPT, "keystroke-currency", String(cacheDir), String(stateDir)]
+  return ["bash", "-c", FETCH_SCRIPT, "nixarchy-menu-currency", String(cacheDir), String(stateDir)]
 }
 
 // ------------------------------------------------------------------ target

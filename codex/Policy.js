@@ -3,7 +3,7 @@
 // Tested against Codex 0.153.2. Keep transport and permission policy explicit.
 var VERSION = "0.153.2"
 var MODEL = "gpt-5.6-luna"
-var QUICK_INSTRUCTIONS = "You are the quick-answer assistant inside Keystroke, an Omarchy command palette. "
+var QUICK_INSTRUCTIONS = "You are the quick-answer assistant inside nixarchy-menu, an Omarchy command palette. "
     + "Answer the user's question directly and concisely, in their language. Use readable Markdown and source links when useful. "
     + "Use web search when current information is needed. You have no access to local files, commands, the desktop, or connected apps in quick-question mode. "
     + "For a request to inspect or change the computer, explain briefly that the user can choose Continue in Codex. "
@@ -26,7 +26,7 @@ function quickConfig(config) {
   return out
 }
 function start(home, settings, config) {
-  return { cwd: home + "/.local/state/keystroke/questions", model: settings.model || MODEL,
+  return { cwd: home + "/.local/state/nixarchy-menu/questions", model: settings.model || MODEL,
     serviceTier: settings.fast === false ? "default" : "fast", ephemeral: false,
     sandbox: "read-only", approvalPolicy: "never", environments: [],
     baseInstructions: QUICK_INSTRUCTIONS, developerInstructions: "",

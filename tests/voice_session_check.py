@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix="keystroke-session-") as work:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-session-") as work:
     directory = Path(work)
     runtime = directory / "runtime"
     runtime.mkdir(mode=0o700)
@@ -116,5 +116,5 @@ ShellRoot {
     if run.returncode or "PASS: cancelled recording" not in output:
         raise SystemExit(output)
     if voxtype_config.read_text() != original_config:
-        raise SystemExit("Voxtype config changed during Keystroke recording lifecycle")
+        raise SystemExit("Voxtype config changed during nixarchy-menu recording lifecycle")
     print("PASS PATH voxtype selected over stale Keystroke build; cancelled recording cannot leak; auto-stop collected")

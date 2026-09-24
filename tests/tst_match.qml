@@ -7,7 +7,7 @@ import "../core/SmartMatch.js" as Smart
 
 TestCase {
     name: "MatchAndRank"
-    readonly property string aiPath: "Keystroke Settings › AI & Web Search › Preferred assistant"
+    readonly property string aiPath: "nixarchy-menu Settings › AI & Web Search › Preferred assistant"
     readonly property string aiKeywords: "provider chatgpt claude"
 
     function test_word_starts_and_exact_titles_rank_first() {
@@ -17,7 +17,7 @@ TestCase {
         verify(Match.match("code", "Visual Studio Code") > 95)
         verify(Match.match("vsc", "Visual Studio Code") > 60)                                       // initials
         compare(Match.match("chrome", "Chromium"), 0)
-        compare(Match.match("chrome", "Keystroke Settings", "preferences configuration"), 0)
+        compare(Match.match("chrome", "nixarchy-menu Settings", "preferences configuration"), 0)
         compare(Match.match("zzz", "Google Chrome"), 0)
         compare(Match.match("", "Anything"), 1)
         compare(Match.match("   ", "Anything"), 1)
@@ -34,7 +34,7 @@ TestCase {
     }
     function test_paths_and_keywords_are_searchable_but_rank_below_titles() {
         var onTitle = Match.match("assist", "Preferred assistant", aiKeywords, aiPath)
-        var viaPath = Match.match("keystroke", "Preferred assistant", aiKeywords, aiPath)
+        var viaPath = Match.match("nixarchy", "Preferred assistant", aiKeywords, aiPath)
         var viaKeywords = Match.match("chatgpt", "Preferred assistant", aiKeywords, aiPath)
         verify(onTitle > viaPath)
         verify(viaPath > viaKeywords)
@@ -42,7 +42,7 @@ TestCase {
         verify(Match.match("chrom", "Google Chrome") > Match.match("chrom", "Default browser", "Chrome"))
     }
     function test_abbreviations_walk_the_breadcrumb() {
-        var abbreviations = ["prefp", "keysepro", "setaiprv", "kspa", "ai prov", "prov ai"]
+        var abbreviations = ["prefp", "nixsepro", "setaiprv", "nmspa", "ai prov", "prov ai"]
         for (var i = 0; i < abbreviations.length; i++)
             verify(Match.match(abbreviations[i], "Preferred assistant", aiKeywords, aiPath) > 0, abbreviations[i])
         compare(Match.match("ai prov", "Preferred assistant", aiKeywords, aiPath), Match.match("prov ai", "Preferred assistant", aiKeywords, aiPath))
@@ -58,7 +58,7 @@ TestCase {
         compare(Match.match("e", "Clipboard History", "", "", prose), 0)                              // single letters do not search prose
         verify(Match.match("omarchy hist", "Clipboard History", "", "", prose) > 0)
         verify(Match.match("browser", "Google Chrome", "", "", "Web Browser Access the Internet") > 0)
-        compare(Match.match("chrome", "Browser", "", "Keystroke Settings › AI & Web Search › Open conversations in › Browser", "mode"), 0)
+        compare(Match.match("chrome", "Browser", "", "nixarchy-menu Settings › AI & Web Search › Open conversations in › Browser", "mode"), 0)
     }
     function test_tiers_dominate_scores_and_frecency() {
         var rows = [

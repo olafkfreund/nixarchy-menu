@@ -14,11 +14,11 @@ Item {
   property var host: null
 
   readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"
-  readonly property string transcriptPath: runtimeDir + "/keystroke-voice.txt"
+  readonly property string transcriptPath: runtimeDir + "/nixarchy-menu-voice.txt"
   readonly property string statePath: runtimeDir + "/voxtype/state"
 
   property bool detected: false          // a usable voxtype binary was found
-  property string command: "voxtype"     // the user's binary from PATH; Keystroke never installs or replaces it
+  property string command: "voxtype"     // the user's binary from PATH; nixarchy-menu never installs or replaces it
   property bool waitFile: false          // the CLI takes --wait-file; streaming sessions need it, see stop()
   property string version: ""
   property string daemonState: ""        // idle | recording | streaming | transcribing | "" (no daemon)
@@ -102,7 +102,7 @@ Item {
   }
   Process {
     id: startProc
-    command: ["sh", "-c", "rm -f \"$2\"; exec \"$1\" record start --file=\"$2\" --no-osd", "keystroke", root.command, root.transcriptPath]
+    command: ["sh", "-c", "rm -f \"$2\"; exec \"$1\" record start --file=\"$2\" --no-osd", "nixarchy-menu-voice", root.command, root.transcriptPath]
     stdout: StdioCollector { id: startOut }
     stderr: StdioCollector { id: startErr }
     onExited: function(code) {
@@ -227,7 +227,7 @@ Item {
   // records: {"peak":0.42,"rms":0.18,"vad":1,"ts_ms":…}. Only alive while listening.
   Process {
     id: bridge
-    command: ["sh", "-c", "b=\"$(dirname \"$1\")/voxtype-audio-bridge\"; [ -x \"$b\" ] || b=voxtype-audio-bridge; RUST_LOG=error exec \"$b\"", "keystroke", root.command]
+    command: ["sh", "-c", "b=\"$(dirname \"$1\")/voxtype-audio-bridge\"; [ -x \"$b\" ] || b=voxtype-audio-bridge; RUST_LOG=error exec \"$b\"", "nixarchy-menu-voice", root.command]
     running: root.phase === "listening"
     stdout: SplitParser {
       onRead: function(line) {

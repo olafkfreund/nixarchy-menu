@@ -5,15 +5,15 @@ import "core/Currency.js" as Currency
 
 // Currency: convert amounts between currencies from the palette.
 //
-// Keystroke creates this object when the extension is turned on, injects
+// nixarchy-menu creates this object when the extension is turned on, injects
 // `shell`, `extension` and `omarchyPath`, reads `provider`, and destroys it
 // when the extension is turned off. The rates are the ECB reference rates
 // from Frankfurter, fetched with curl the first time a conversion is asked
 // for on a given day (after 04:00 local time) and kept in
-// ~/.cache/keystroke/currency/rates.json; offline, the last table answers
+// ~/.cache/nixarchy-menu/currency/rates.json; offline, the last table answers
 // and says how old it is. Nothing runs in the background and nothing runs
 // before the first conversion. In automatic mode the explicit targets the
-// user names are counted in ~/.local/state/keystroke/currency/usage.json.
+// user names are counted in ~/.local/state/nixarchy-menu/currency/usage.json.
 QtObject {
   id: root
   property var shell: null
@@ -23,8 +23,8 @@ QtObject {
   property var settings: ({ preferredCurrency: "", targetMode: "preferred" })
   readonly property string key: extension && extension.id ? String(extension.id) : "currency"
   readonly property string home: Quickshell.env("HOME")
-  readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || root.home + "/.cache") + "/keystroke/currency"
-  readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/keystroke/currency"
+  readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || root.home + "/.cache") + "/nixarchy-menu/currency"
+  readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state") + "/nixarchy-menu/currency"
   readonly property string localeCurrency: Qt.locale().currencySymbol(Locale.CurrencyIsoCode)
 
   property var cache: null           // the table, once read from disk or downloaded

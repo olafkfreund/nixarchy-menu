@@ -7,7 +7,7 @@ TestCase {
     name: "SettingsTree"
     function model() {
         return {
-            configPath: "/home/x/.config/omarchy/keystroke.json",
+            configPath: "/home/x/.config/omarchy/nixarchy-menu.json",
             paletteSchema: [
                 { key: "density", type: "enum", label: "Layout density", "default": "compact", options: ["compact", "comfortable"], description: "Compact uses a narrower window" },
                 { key: "showPreview", type: "boolean", label: "Show result previews", "default": true }
@@ -39,12 +39,12 @@ TestCase {
     function test_abbreviations_reach_a_deep_setting_from_the_root() {
         // The setting's config key is `provider`, so "pro"/"prv" reach it
         // through the key even though its label says "assistant".
-        var abbreviations = ["prefp", "keysepro", "setaiprv", "preferred", "ai prov", "prov ai", "aiprefp", "pref"]
+        var abbreviations = ["prefp", "nixsepro", "setaiprv", "preferred", "ai prov", "prov ai", "aiprefp", "pref"]
         for (var i = 0; i < abbreviations.length; i++) {
             var rows = search("", abbreviations[i])
             verify(rows.length > 0, abbreviations[i] + " found nothing")
             compare(rows[0].title, "Preferred assistant", abbreviations[i])
-            compare(rows[0].subtitle, "Keystroke Settings › AI & Web Search")
+            compare(rows[0].subtitle, "nixarchy-menu Settings › AI & Web Search")
             compare(rows[0].action.type, "navigate")
             compare(rows[0].action.scope, "settings/ai/provider")
             compare(rows[0].accessory, "chatgpt")
@@ -57,7 +57,7 @@ TestCase {
         compare(rows[0].action.type, "setting")
         compare(rows[0].action.value, "claude")
         compare(rows[0].action.path, ["providers", "ai"])
-        compare(rows[0].previewDetail, "Keystroke Settings › AI & Web Search › Preferred assistant › Claude")
+        compare(rows[0].previewDetail, "nixarchy-menu Settings › AI & Web Search › Preferred assistant › Claude")
         rows = search("settings", "ai cla")
         compare(rows[0].title, "Claude")
         compare(rows[0].subtitle, "AI & Web Search › Preferred assistant")          // breadcrumb below the current screen
@@ -70,7 +70,7 @@ TestCase {
         compare(rows.length, 0)                                                       // no such provider in the model
         rows = search("", "enable clip")
         compare(rows[0].title, "Enabled")
-        compare(rows[0].subtitle, "Keystroke Settings › Clipboard History")
+        compare(rows[0].subtitle, "nixarchy-menu Settings › Clipboard History")
         compare(rows[0].action.value, false)
         rows = search("", "hello")
         compare(rows[0].title, "Hello")
@@ -79,9 +79,9 @@ TestCase {
     function test_listings_show_one_screen_and_value_screens_are_registered() {
         var t = SettingsTree.build(model())
         var root = SettingsTree.rows(t.nodes, "", "")
-        compare(titles(root), ["Keystroke Settings"])
+        compare(titles(root), ["nixarchy-menu Settings"])
         compare(root[0].score, 20)
-        compare(titles(SettingsTree.rows(t.nodes, "settings", "")), ["Appearance", "Open config file", "Learn Keystroke", "AI & Web Search", "Clipboard History", "Hello", "broken"])
+        compare(titles(SettingsTree.rows(t.nodes, "settings", "")), ["Appearance", "Open config file", "Learn nixarchy-menu", "AI & Web Search", "Clipboard History", "Hello", "broken"])
         compare(titles(SettingsTree.rows(t.nodes, "settings/ai", "")), ["Enabled", "Preferred assistant", "Open conversations in", "Send immediately in the browser"])
         var hello = SettingsTree.rows(t.nodes, "settings/hello", "")
         compare(hello[0].title, "Enabled")
@@ -122,7 +122,7 @@ TestCase {
         compare(screen[3].accessory, "Missing")
         compare(screen[3].verb, "Install")
         compare(screen[3].action.type, "voice-bindings")
-        verify(screen[3].confirm.indexOf("Add the Keystroke voice block") === 0)
+        verify(screen[3].confirm.indexOf("Add the nixarchy-menu voice block") === 0)
         verify(screen[4].disabled)
         verify(t.screens["settings/voice/keys"] !== undefined)
         var rows = Match.rank(SettingsTree.rows(t.nodes, "", "voice"), null)
@@ -131,7 +131,7 @@ TestCase {
         verify(["Voice", "Voxtype voice command integration"].indexOf(rows[0].title) >= 0, rows[0].title)
         rows = Match.rank(SettingsTree.rows(t.nodes, "", "hold bind"), null)
         compare(rows[0].title, "Hold-to-talk bindings")
-        compare(rows[0].subtitle, "Keystroke Settings › Voice")
+        compare(rows[0].subtitle, "nixarchy-menu Settings › Voice")
         rows = Match.rank(SettingsTree.rows(t.nodes, "", "second tap clo"), null)
         compare(rows[0].title, "Close")
         compare(rows[0].action.path, ["voice"])
@@ -157,14 +157,14 @@ TestCase {
         t = SettingsTree.build(model())                                              // no voice model at all: nothing changes
         compare(titles(SettingsTree.rows(t.nodes, "settings", "")).slice(0, 2), ["Appearance", "Open config file"])
     }
-    function test_learn_keystroke_opens_the_guide_from_anywhere() {
+    function test_learn_nixarchy_menu_opens_the_guide_from_anywhere() {
         var rows = search("", "learn")
-        compare(rows[0].title, "Learn Keystroke")
-        compare(rows[0].subtitle, "Keystroke Settings")
+        compare(rows[0].title, "Learn nixarchy-menu")
+        compare(rows[0].subtitle, "nixarchy-menu Settings")
         compare(rows[0].action.type, "url")
-        compare(rows[0].action.url, "https://evindor.github.io/keystroke/guide/")
-        compare(search("", "guide")[0].title, "Learn Keystroke")
-        compare(search("settings", "help")[0].title, "Learn Keystroke")
+        compare(rows[0].action.url, "https://github.com/olafkfreund/nixarchy-menu#readme")
+        compare(search("", "guide")[0].title, "Learn nixarchy-menu")
+        compare(search("settings", "help")[0].title, "Learn nixarchy-menu")
     }
     function test_unrelated_queries_find_nothing() {
         compare(search("", "chrome").length, 0)

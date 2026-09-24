@@ -6,7 +6,7 @@
 // palette schema and the provider registry into nodes; rows() lists one
 // screen (empty query) or searches every screen below the current one (any
 // query), so a choice three levels down is reachable from the palette root by
-// typing through its breadcrumb: "keysepro" → Keystroke Settings › AI & Web
+// typing through its breadcrumb: "nixsepro" → nixarchy-menu Settings › AI & Web
 // Search › Preferred assistant (the setting's key is `provider`).
 //
 // Scopes: "" (palette root) › settings › settings/palette | settings/<key>
@@ -14,8 +14,8 @@
 // String and number settings own a value screen instead of child nodes;
 // build() lists those under `screens` for the provider to render.
 
-var ROOT_TITLE = "Keystroke Settings"
-var GUIDE_URL = "https://evindor.github.io/keystroke/guide/"
+var ROOT_TITLE = "nixarchy-menu Settings"
+var GUIDE_URL = "https://github.com/olafkfreund/nixarchy-menu#readme"
 var GEAR = "󰒓"
 
 function titleCase(s) { s = String(s); return s.charAt(0).toUpperCase() + s.slice(1) }
@@ -71,12 +71,12 @@ function voiceNodes(nodes, screens, rootParts, voice) {
   var values = voice.values || {}
   var engine = "Voxtype "
   var on = !!(voice.detected && values.enabled)
-  nodes.push(node("settings", parts, { id: "voice", icon: "󰍬", section: "Keystroke", order: 1, lift: 1,
+  nodes.push(node("settings", parts, { id: "voice", icon: "󰍬", section: "nixarchy-menu", order: 1, lift: 1,
     subtitle: voice.detected ? (on ? "On" : "Off") + " · " + engine + (voice.version || "") + " · " + daemonLabel(voice) : "Voxtype is not installed",
     keywords: "voxtype dictation speech microphone", description: "voice dictation voxtype speech microphone hold to talk transcribe",
     action: navigate(scope, "Voice") }))
   if (!voice.detected) {
-    nodes.push(node(scope, parts.concat(["Voxtype is not installed"]), { id: "voice/missing", subtitle: "Voice is optional; Keystroke never installs it in the background",
+    nodes.push(node(scope, parts.concat(["Voxtype is not installed"]), { id: "voice/missing", subtitle: "Voice is optional; nixarchy-menu never installs it in the background",
       icon: "󰀦", verb: "", order: 0, disabled: true, listOnly: true, action: { type: "noop" } }))
     nodes.push(node(scope, parts.concat(["Install dictation (voxtype)"]), { id: "voice/install", subtitle: "Runs Omarchy's stock voxtype installer in a floating terminal",
       icon: "", verb: "Install", order: 1, keywords: "voxtype install", description: "install voxtype dictation",
@@ -93,7 +93,7 @@ function voiceNodes(nodes, screens, rootParts, voice) {
             : "Adds long-press and release binds for the hotkeys above to " + path,
     accessory: st === "installed" ? "Installed" : st === "outdated" ? "Outdated" : "Missing",
     keywords: "hyprland bindings hold", description: "hyprland keybinding long press release install bindings.lua",
-    confirm: (st === "missing" ? "Add" : "Rewrite") + " the Keystroke voice block in " + path + " and reload Hyprland?",
+    confirm: (st === "missing" ? "Add" : "Rewrite") + " the nixarchy-menu voice block in " + path + " and reload Hyprland?",
     action: { type: "voice-bindings" } }))
   nodes.push(node(scope, parts.concat([engine + (voice.version || "")]), { id: "voice/status", icon: "󰍬", verb: "", order: 60, disabled: true, listOnly: true,
     subtitle: daemonLabel(voice) + " · tap the hotkey again or hold it while the palette is open", action: { type: "noop" } }))
@@ -109,13 +109,13 @@ function build(model) {
   nodes.push(node("", rootParts, { id: "settings", subtitle: "Providers, appearance and the config file", order: 7, listScore: 20,
     description: "preferences configuration providers", action: navigate("settings", "Settings") }))
   var appearance = rootParts.concat(["Appearance"])
-  nodes.push(node("settings", appearance, { id: "palette", subtitle: "Density, accent, previews and animations", icon: "󰏘", section: "Keystroke", order: 0, lift: 1,
+  nodes.push(node("settings", appearance, { id: "palette", subtitle: "Density, accent, previews and animations", icon: "󰏘", section: "nixarchy-menu", order: 0, lift: 1,
     description: "layout density accent preview theme animations motion transitions", action: navigate("settings/palette", "Appearance") }))
   schemaNodes(nodes, screens, ["palette"], model.paletteSchema || [], model.paletteValues || {}, "settings/palette", appearance, "palette")
   voiceNodes(nodes, screens, rootParts, model.voice)
   if (model.matching) {
     var matching = rootParts.concat(["Matching"])
-    nodes.push(node("settings", matching, { id: "matching", section: "Keystroke", order: 2, subtitle: "Smart match and model size",
+    nodes.push(node("settings", matching, { id: "matching", section: "nixarchy-menu", order: 2, subtitle: "Smart match and model size",
       keywords: "semantic embeddings search", action: navigate("settings/matching", "Matching") }))
     schemaNodes(nodes, screens, ["matching"], model.matching.schemas, model.matching.values, "settings/matching", matching, "matching")
     nodes.push(node("settings/matching", matching.concat([model.matching.error ? "Retry Smart Match" : model.matching.status || "Model unloaded"]), {
@@ -123,12 +123,12 @@ function build(model) {
       subtitle: model.matching.error || "Models are downloaded once and matched locally", verb: model.matching.error ? "Retry" : "",
       action: model.matching.error ? { type: "matching-retry" } : { type: "noop" } }))
   }
-  nodes.push(node("settings", rootParts.concat(["Open config file"]), { id: "config", subtitle: String(model.configPath || ""), icon: "", section: "Keystroke",
+  nodes.push(node("settings", rootParts.concat(["Open config file"]), { id: "config", subtitle: String(model.configPath || ""), icon: "", section: "nixarchy-menu",
     verb: "Open file", order: 2, keywords: "json", description: "edit", action: { type: "edit" } }))
   // The usage guide on the website: every feature, key, prefix and extension
   // with a screenshot. Reachable from the root by name ("learn", "guide").
-  nodes.push(node("settings", rootParts.concat(["Learn Keystroke"]), { id: "learn", subtitle: "The usage guide in your browser: every feature, key and prefix, with screenshots", icon: "󰋗",
-    section: "Keystroke", verb: "Open guide", order: 3, lift: 1, keywords: "guide help docs manual tutorial", description: "learn how to use keystroke usage guide documentation help",
+  nodes.push(node("settings", rootParts.concat(["Learn nixarchy-menu"]), { id: "learn", subtitle: "The usage guide in your browser: every feature, key and prefix, with screenshots", icon: "󰋗",
+    section: "nixarchy-menu", verb: "Open guide", order: 3, lift: 1, keywords: "guide help docs manual tutorial", description: "learn how to use nixarchy-menu usage guide documentation help",
     action: { type: "url", url: GUIDE_URL } }))
   var entries = model.entries || []
   for (var i = 0; i < entries.length; i++) {
@@ -145,7 +145,7 @@ function build(model) {
     // provider's own screen and its breadcrumb names the provider, and the
     // word "provider" would otherwise shadow settings that carry it as a key.
     var enabledSchema = { key: "enabled", type: "boolean", label: "Enabled",
-                          description: extension ? "Runs the extension's code in your shell with your permissions" : "Include this provider in Keystroke" }
+                          description: extension ? "Runs the extension's code in your shell with your permissions" : "Include this provider in nixarchy-menu" }
     // Turning an extension on runs its code: that asks first, as the Extensions screen does.
     nodes.push(node(scope, parts.concat([enabledSchema.label]), { id: e.key + "/enabled", subtitle: enabledSchema.description, verb: "Toggle", order: -1, lift: 1,
       accessory: e.enabled ? "On" : "Off", keywords: "enabled", description: "enable disable toggle on off " + enabledSchema.description,

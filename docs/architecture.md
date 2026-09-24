@@ -1,19 +1,19 @@
 # Architecture
 
-Keystroke is one Omarchy `menu` plugin. Everything runs in `omarchy-shell`'s QML engine; local queries stay synchronous and never wait for Codex. Speech has its own daemon; the optional Codex transport stays warm for ten idle minutes.
+nixarchy-menu is one Omarchy `menu` plugin. Everything runs in `omarchy-shell`'s QML engine; local queries stay synchronous and never wait for Codex. Speech has its own daemon; the optional Codex transport stays warm for ten idle minutes.
 
 ```text
 omarchy-shell
   ├─ BarWidget.qml (bar-widget entry point: the menu button, then the palette's bar items,
-  │                 read off the keepLoaded Keystroke instance through shell.panelLoaders)
-  └─ Keystroke.qml (menu entry point, keepLoaded)
+  │                 read off the keepLoaded NixarchyMenu instance through shell.panelLoaders)
+  └─ NixarchyMenu.qml (menu entry point, keepLoaded)
        ├─ window, keys, navigation stack, dmenu protocol, effects, config, frecency,
        │  bar items (host.setBarItem: one { text, tooltip, payload } per enabled provider)
        ├─ providers/Registry.qml
        │    ├─ bundled: OmarchyMenu, Applications, Calculator, Converter, Colors,
        │    │           Emoji, Clipboard, Files, Hotkeys, Codex, AiWeb, Extensions, CommandsProvider, SettingsProvider
-       │    └─ extensions: Service.qml of every folder under extensions/ (ships with Keystroke) and
-       │                   ~/.local/share/keystroke/extensions (local work), created here only once
+       │    └─ extensions: Service.qml of every folder under extensions/ (ships with nixarchy-menu) and
+       │                   ~/.local/share/nixarchy-menu/extensions (local work), created here only once
        │                   the user turns it on; off means never compiled
        ├─ providers/Extensions.qml   the Extensions screen: switches, setup scripts in a visible
        │                             terminal, source links (core/Extensions.js)
@@ -26,16 +26,16 @@ omarchy-shell
 
 ## Voice
 
-`voice/VoiceSession.qml` drives the voxtype daemon that Omarchy ships, one recording at a time: `voxtype record start --file <runtime>/keystroke-voice.txt --no-osd` (voxtype hides its own overlay for tools that draw their own), `voxtype-audio-bridge` for peak/RMS frames at 100 Hz while listening (it reads the daemon's audio socket; nothing else touches the microphone), then `voxtype record stop --wait --json` whose `text` becomes the query. The daemon's state file is watched so a recording the daemon ends on its own (its max duration) is still collected, with the transcript file as fallback. Idle cost: one `FileView` on the state file; detection (`command -v voxtype`) runs at load and at most every 30 s on open.
+`voice/VoiceSession.qml` drives the voxtype daemon that Omarchy ships, one recording at a time: `voxtype record start --file <runtime>/nixarchy-menu-voice.txt --no-osd` (voxtype hides its own overlay for tools that draw their own), `voxtype-audio-bridge` for peak/RMS frames at 100 Hz while listening (it reads the daemon's audio socket; nothing else touches the microphone), then `voxtype record stop --wait --json` whose `text` becomes the query. The daemon's state file is watched so a recording the daemon ends on its own (its max duration) is still collected, with the transcript file as fallback. Idle cost: one `FileView` on the state file; detection (`command -v voxtype`) runs at load and at most every 30 s on open.
 
-Two triggers, both host-owned in `Keystroke.qml`:
+Two triggers, both host-owned in `NixarchyMenu.qml`:
 
 - **Tap.** The hotkey's second press reaches the plugin as the shell's `close()` (toggle → hide). With the integration on and the palette in palette mode, that call starts a recording instead of closing, and the next one stops it. `Esc`, the scrim and `omarchy menu summon` still close or reset. An explicit `omarchy menu close` takes the same path; nothing in Omarchy calls it.
 - **Hold.** Hyprland is the only party that knows the key is still down, so two user-side bindings feed IPC methods: a long-press bind (`bindo`, fires after the keyboard repeat delay whichever order the keys are released in later) calls `voiceHold`, and a release bind (`bindr`) calls `voiceRelease`. Hyprland's release bind only fires while the modifier is still held (`handleKeybinds` compares the current modmask), and it swallows the hotkey's own release, so the palette also ends a hold when the modifier's release (`Key_Super_L`/`Key_Meta`) reaches the search field, which Hyprland does deliver. A tap's release must not end anything, so the modifier release only counts when the recording was started by a hold. `core/VoiceBindings.js` generates the block for `~/.config/hypr/bindings.lua`, recognises it by its markers and rewrites it in place; the Settings row confirms, writes atomically and runs `hyprctl reload`.
 
 `↵` while listening only stops recording; a fresh Enter after transcription activates the visible selection. Any other non-modifier key cancels the recording and pending suggestion before behaving as usual. The transcript replaces the query through the normal `edited()` path, so ranking, previews and frecency are untouched.
 
-**Binary and configuration.** `VoiceSession` resolves `voxtype` from the user's `PATH` and takes the audio bridge from the same directory (falling back to `voxtype-audio-bridge` on `PATH`). Keystroke does not install another build, write a systemd drop-in, or edit Voxtype's config. Its only behavior overrides are scoped to its own recording: `--file` keeps the result out of the user's configured output target and `--no-osd` avoids drawing two recording interfaces. Every other Voxtype choice remains the user's.
+**Binary and configuration.** `VoiceSession` resolves `voxtype` from the user's `PATH` and takes the audio bridge from the same directory (falling back to `voxtype-audio-bridge` on `PATH`). nixarchy-menu does not install another build, write a systemd drop-in, or edit Voxtype's config. Its only behavior overrides are scoped to its own recording: `--file` keeps the result out of the user's configured output target and `--no-osd` avoids drawing two recording interfaces. Every other Voxtype choice remains the user's.
 
 **Live words.** Live partials are opportunistic. While listening, the session watches `$XDG_RUNTIME_DIR/voxtype/transcript` through a `FileView` behind a `Loader` plus an 80 ms poll (a mirror writer may replace the file by rename). If the running daemon publishes that integration file, `partial(text)` updates the query and results as speech arrives. If it does not, the path stays absent and the final transcript still arrives through `record stop --wait --json`, with the requested transcript file as fallback. This keeps current Voxtype releases useful without opting the user into an experimental build or streaming configuration.
 
@@ -49,7 +49,7 @@ Two triggers, both host-owned in `Keystroke.qml`:
 
 `providers/Codex.qml` owns the durable session and an optional provider view. `codex/AppServer.qml` speaks asynchronous JSONL RPC to one version-checked `codex app-server --stdio`. It initializes, reads configured capabilities/model/account readiness, correlates responses, bounds logs and enforces startup/request deadlines. It never attaches to the desktop's private server. Ten idle minutes shut down the child; resuming rehydrates the saved conversation.
 
-`CodexSession.qml` tracks connection, thread, turn and item identities; reconciles early notifications and final items; coalesces deltas every 32 ms; handles interruption, drafts, scoped approvals and questions. Escape requests interruption offscreen. A ten-second unacknowledged interruption closes the connection without retrying the request. Codex owns history; `~/.local/state/keystroke/codex.json` is an atomic forty-entry index with drafts.
+`CodexSession.qml` tracks connection, thread, turn and item identities; reconciles early notifications and final items; coalesces deltas every 32 ms; handles interruption, drafts, scoped approvals and questions. Escape requests interruption offscreen. A ten-second unacknowledged interruption closes the connection without retrying the request. Codex owns history; `~/.local/state/nixarchy-menu/codex.json` is an atomic forty-entry index with drafts.
 
 Quick mode explicitly disables shell, code execution, local environments, inherited MCP, connected apps, plugins and hooks, while retaining web search. Agent mode is deliberately selected with a visible working directory and Codex workspace-write/on-request permissions. No answer text is interpreted as an effect. Handoff stops an active turn and exits the owned server: unsubscribe alone retains Codex's writer lease and prevents another client from resuming.
 
@@ -91,7 +91,7 @@ Each walk uses two threads, stops after 400 candidates, and has a three-second w
 
 ## Hotkeys
 
-`providers/Hotkeys.qml` puts Omarchy's Hyprland keybindings at the root of the palette, named by what they do, with the keys as the row's accessory. It does not read `hyprctl binds` itself: Omarchy's `omarchy-menu-keybindings` (the script behind `Super+K`, which Keystroke already renders over the dmenu protocol) already merges Lua and conf binds, resolves `code:` keys through the keymap, cleans dispatcher arguments, orders the list and caches it under `~/.cache/omarchy/`. The provider sources that script with `--print` (defining its functions with the display lines sent to `/dev/null`) and calls its `output_binding_records`, which prints one record per bind: `"SUPER + F … → Full screen\tlua\thl.dsp.window.fullscreen(…)"`. `core/Hotkeys.js` parses those records, merges a label bound twice to the same action into one row listing both combos (Browser on `Super + Shift + ↵` and `Super + Shift + B`), spells the keys the way the palette's own hints do, and scores rows with `Match.match` on the label, the combo and, for `exec` binds, the command; a query that spells a combo exactly (`super f`) gets a bonus over binds that merely contain those keys. Activation returns an `exec` effect whose argv sources the same script and calls its `dispatch_binding` with the dispatcher and argument as literal arguments, so running a row does what pressing the keys does (Lua expressions through `hyprctl dispatch`, `exec` through `hl.dsp.exec_cmd`, `sendshortcut` through `send_key_state`). Binds whose dispatcher the script could not resolve (Lua closures such as Close window, Universal copy) are shown disabled with "Only from the keyboard". The list is reloaded at most once per 30 s on summon; the script's own cache makes that a hash of `hyprctl binds` and a `cat`.
+`providers/Hotkeys.qml` puts Omarchy's Hyprland keybindings at the root of the palette, named by what they do, with the keys as the row's accessory. It does not read `hyprctl binds` itself: Omarchy's `omarchy-menu-keybindings` (the script behind `Super+K`, which nixarchy-menu already renders over the dmenu protocol) already merges Lua and conf binds, resolves `code:` keys through the keymap, cleans dispatcher arguments, orders the list and caches it under `~/.cache/omarchy/`. The provider sources that script with `--print` (defining its functions with the display lines sent to `/dev/null`) and calls its `output_binding_records`, which prints one record per bind: `"SUPER + F … → Full screen\tlua\thl.dsp.window.fullscreen(…)"`. `core/Hotkeys.js` parses those records, merges a label bound twice to the same action into one row listing both combos (Browser on `Super + Shift + ↵` and `Super + Shift + B`), spells the keys the way the palette's own hints do, and scores rows with `Match.match` on the label, the combo and, for `exec` binds, the command; a query that spells a combo exactly (`super f`) gets a bonus over binds that merely contain those keys. Activation returns an `exec` effect whose argv sources the same script and calls its `dispatch_binding` with the dispatcher and argument as literal arguments, so running a row does what pressing the keys does (Lua expressions through `hyprctl dispatch`, `exec` through `hl.dsp.exec_cmd`, `sendshortcut` through `send_key_state`). Binds whose dispatcher the script could not resolve (Lua closures such as Close window, Universal copy) are shown disabled with "Only from the keyboard". The list is reloaded at most once per 30 s on summon; the script's own cache makes that a hash of `hyprctl binds` and a `cat`.
 
 ## Helpers
 
@@ -99,13 +99,13 @@ The optional Codex and speech transports are described above. File search uses `
 
 ## Settings and state
 
-`~/.config/omarchy/keystroke.json` (FileView, watched, atomic writes; `core/Settings.js` validates against provider schemas, preserves unknown fields, refuses to overwrite a file that does not parse). `~/.local/state/keystroke/usage.json` holds frecency (`core/Frecency.js`: md5 of provider/row id, decaying weights, 2000-entry cap). Enable/disable of the plugin itself stays in Omarchy's `shell.json`.
+`~/.config/omarchy/nixarchy-menu.json` (FileView, watched, atomic writes; `core/Settings.js` validates against provider schemas, preserves unknown fields, refuses to overwrite a file that does not parse). `~/.local/state/nixarchy-menu/usage.json` holds frecency (`core/Frecency.js`: md5 of provider/row id, decaying weights, 2000-entry cap). Enable/disable of the plugin itself stays in Omarchy's `shell.json`.
 
 ## Matching
 
 `core/Match.js` is fzf's FuzzyMatchV2 (Smith-Waterman with affine gaps and bonuses for word starts, camelCase and digits) tuned for a palette: the per-letter score is smaller than fzf's so letters on word starts dominate, a gap never costs more than a few letters so skipping a whole breadcrumb segment is cheap, and matches below 40 % of a perfect prefix are dropped. A row is scored on up to four haystacks: its title, its breadcrumb path below the current scope (× 0.97), its identifiers such as aliases, ids and config keys (× 0.92), and its description, which is prose and only matches when every query word is a prefix of a word in it (flat 50). Query words are AND-ed in any order. Normalised scores put a whole-word prefix at 100 and an exact title at 120; providers add small constant lifts on top (actions +3, confident app matches +45) and frecency reorders within the item tier only.
 
-Every provider that owns a tree searches all of it when a query is present: the Omarchy menu scores descendants of the active submenu against their relative breadcrumb, and `core/SettingsTree.js` flattens every settings screen, setting and enum choice into nodes with breadcrumbs so `keysepro` reaches Keystroke Settings › AI & Web Search › Preferred assistant from the root and `prefcla` selects its Claude choice directly. Prepared haystacks and joined strings are cached per distinct string, and providers cache their breadcrumbs, so a keystroke costs one DP pass per candidate; the test suite times a 700-row worst case (every row matching) at about 10 ms in the QML engine.
+Every provider that owns a tree searches all of it when a query is present: the Omarchy menu scores descendants of the active submenu against their relative breadcrumb, and `core/SettingsTree.js` flattens every settings screen, setting and enum choice into nodes with breadcrumbs so `nixsepro` reaches nixarchy-menu Settings › AI & Web Search › Preferred assistant from the root and `prefcla` selects its Claude choice directly. Prepared haystacks and joined strings are cached per distinct string, and providers cache their breadcrumbs, so a keystroke costs one DP pass per candidate; the test suite times a 700-row worst case (every row matching) at about 10 ms in the QML engine.
 
 ## Deferred
 

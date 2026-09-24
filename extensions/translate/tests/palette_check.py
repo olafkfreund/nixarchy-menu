@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """The Translate extension inside the real palette, offscreen, with a fake curl.
 
-A copy of the project runs Keystroke.qml under Quickshell's offscreen platform
+A copy of the project runs NixarchyMenu.qml under Quickshell's offscreen platform
 with a fake HOME whose bin/ shadows curl, wl-paste, wl-copy, wtype and the
 notification script: curl answers from a small table in the endpoint's JSON
 shape and logs every request, wl-paste returns a Ukrainian selection, wl-copy
 and wtype record what they were given. Nothing reaches the network or the
-desktop. Checked: the extension is off until keystroke.json says so; `tr hello
+desktop. Checked: the extension is off until nixarchy-menu.json says so; `tr hello
 world` produces the answer row, the reverse translation and the follow-up
 rows with three requests in the right order; the editor view opens with the
 typed text; the selection rows appear and "Copy the translated selection"
@@ -26,12 +26,12 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 
-with tempfile.TemporaryDirectory(prefix="keystroke-translate-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-translate-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
@@ -72,7 +72,7 @@ sys.stdout.write(body + "\\n__STATUS__200")
     notify.chmod(notify.stat().st_mode | stat.S_IEXEC)
 
     (work / ".config/omarchy").mkdir(parents=True)
-    (work / ".config/omarchy/keystroke.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
+    (work / ".config/omarchy/nixarchy-menu.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
 
     (work / "shell.qml").write_text('''import QtQuick
 import Quickshell
@@ -87,10 +87,10 @@ ShellRoot {
  function titles() { return palette.rows.map(function(r) { return r.title }) }
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function indexOf(title) { for (var i = 0; i < palette.rows.length; i++) if (palette.rows[i].title === title) return i; return -1 }
- property string captureDir: "''' + os.environ.get('KEYSTROKE_CAPTURE_DIR', '') + '''"
+ property string captureDir: "''' + os.environ.get('NIXARCHY_MENU_CAPTURE_DIR', '') + '''"
  property int settled: 0
  property bool capturing: false
- // With KEYSTROKE_CAPTURE_DIR set, the palette window is saved as PNGs for a look at the rows and the view; the stages wait for each grab.
+ // With NIXARCHY_MENU_CAPTURE_DIR set, the palette window is saved as PNGs for a look at the rows and the view; the stages wait for each grab.
  function capture(name) {
    if (!captureDir) return
    var win = null, list = palette.resources
@@ -100,7 +100,7 @@ ShellRoot {
    win.contentItem.grabToImage(function(r) { r.saveToFile(captureDir + "/" + name + ".png"); test.capturing = false })
  }
  function config(on, extra) { var c = { version: 1, matching: { mode: "off" }, providers: {} }; for (var i = 0; i < on.length; i++) c.providers[on[i]] = { enabled: true }; if (extra) for (var k in extra) c.providers.translate[k] = extra[k]; return JSON.stringify(c) }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    if (test.capturing) return
    switch (test.stage) {
@@ -211,8 +211,8 @@ ShellRoot {
 }
 ''')
 
-    if os.environ.get("KEYSTROKE_CAPTURE_DIR"):
-        Path(os.environ["KEYSTROKE_CAPTURE_DIR"]).mkdir(parents=True, exist_ok=True)
+    if os.environ.get("NIXARCHY_MENU_CAPTURE_DIR"):
+        Path(os.environ["NIXARCHY_MENU_CAPTURE_DIR"]).mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), PATH=f"{fake}:{os.environ.get('PATH', '')}",
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)

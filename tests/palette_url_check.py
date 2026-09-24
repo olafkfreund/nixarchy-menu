@@ -9,13 +9,13 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-url-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-url-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(
         ".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text().replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
     source.write_text("\n".join(line for line in qml.splitlines() if "exclusionMode:" not in line and "WlrLayershell." not in line))
@@ -35,7 +35,7 @@ else:
     (fake / "bash").chmod(0o755)
     (fake / "wl-paste").write_text("#!/bin/sh\nexit 1\n")
     (fake / "wl-paste").chmod(0o755)
-    config = work / ".config/omarchy/keystroke.json"
+    config = work / ".config/omarchy/nixarchy-menu.json"
     config.parent.mkdir(parents=True)
     config.write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
 
@@ -58,7 +58,7 @@ ShellRoot {
    var r = palette.rows[0]
    check(r && r.providerKey === "open-url" && r.tier === "answer" && r.action.url === url, "URL ranks first: " + url)
  }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    switch (test.stage) {
    case 0:

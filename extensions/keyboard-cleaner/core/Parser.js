@@ -8,7 +8,7 @@
 // duration so they can be wiped down. `wipe 30s` is the declared command
 // (the host hands over the text after the prefix); `block 5m`, `clean 2
 // minutes` and `wash 30s` are the alternative verbs, matched through the
-// patterns below the same way Keystroke's own providers match shapes.
+// patterns below the same way nixarchy-menu's own providers match shapes.
 
 var NAME = "Keyboard Cleaner"
 var ICON = "󰌓"              // nf-md-keyboard_variant, the glyph the Omalaunch extension uses

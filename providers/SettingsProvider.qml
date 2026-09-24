@@ -15,7 +15,7 @@ Item {
   readonly property var provider: ({
     apiVersion: 1,
     id: "settings",
-    name: "Keystroke Settings",
+    name: "nixarchy-menu Settings",
     icon: "󰒓",
     color: "#a5a4ad",
     description: "Providers, appearance and the config file",

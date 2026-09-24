@@ -6,7 +6,7 @@ import qs.Ui as Ui
 import "core/Translate.js" as Translate
 
 // The editor: type or dictate on top, one block per target language below,
-// then the reverse translation as a check. Keystroke loads this component
+// then the reverse translation as a check. nixarchy-menu loads this component
 // over its results (`provider-view`), injects `host`, and calls focusInput(),
 // dismiss(), beginVoice() and transcript() as documented in docs/providers.md.
 // Colors and sizes come from the host so the view keeps the palette's theme
@@ -79,7 +79,7 @@ Item {
     function onTranslated() { root.refresh() }
   }
 
-  // A current Keystroke paints the backdrop behind this view, inside the card
+  // A current nixarchy-menu paints the backdrop behind this view, inside the card
   // border. Filling the card here would cover that border, so only do it for a
   // host that does not.
   Rectangle {

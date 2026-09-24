@@ -4,9 +4,9 @@ import Quickshell
 import Quickshell.Io
 import "core/Translate.js" as Translate
 
-// Translate: Google Translate inside the Keystroke command palette, keyless.
+// Translate: Google Translate inside the nixarchy-menu command palette, keyless.
 //
-// Keystroke creates this object inside omarchy-shell when the user turns the
+// nixarchy-menu creates this object inside omarchy-shell when the user turns the
 // extension on, injects `shell`, `extension` and `omarchyPath`, reads
 // `provider`, and destroys the object when the extension is turned off. The
 // decisions (grammar, request, parsing, rows) are in core/Translate.js; this

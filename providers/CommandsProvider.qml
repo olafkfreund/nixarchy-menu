@@ -28,7 +28,7 @@ Item {
   })
 
   function navRow(score) {
-    return { id: "help", title: "What can I type?", subtitle: "Every command and its arguments · or type /", icon: "󰘳", section: "Keystroke",
+    return { id: "help", title: "What can I type?", subtitle: "Every command and its arguments · or type /", icon: "󰘳", section: "nixarchy-menu",
              verb: "Open", tier: "item", score: score, order: 99, keywords: "help commands prefixes usage",
              description: "help commands prefixes what can I type usage arguments", action: { type: "navigate", scope: "commands", title: "Commands" } }
   }

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Declared commands inside the real palette, offscreen.
 
-A copy of the project runs Keystroke.qml under Quickshell's offscreen platform
+A copy of the project runs NixarchyMenu.qml under Quickshell's offscreen platform
 with a fake HOME (a fake curl on PATH keeps the Translate extension off the
 network). Checked, through the palette's own state and inspect(): the empty
 root offers "What can I type?"; typing a prefix produces the hint line and
 the ghost placeholders that follow the caret; a typed command routes the text
 to its owner ("timer 10m tea" starts a timer, "tm 10m tea" after the prefix
-is renamed in keystroke.json); a typed command is exclusive (":smi" lists only emoji);
+is renamed in nixarchy-menu.json); a typed command is exclusive (":smi" lists only emoji);
 "/" lists every command and "/tr" filters it; a name ("trans") suggests the
 command and Tab types its prefix; Tab while typing a command is a space that
 moves to the next argument and does nothing on the last one; an
@@ -24,12 +24,12 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-commands-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-commands-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
@@ -44,7 +44,7 @@ with tempfile.TemporaryDirectory(prefix="keystroke-palette-commands-") as temp:
     (fake / "wl-paste").chmod(0o755)
 
     (work / ".config/omarchy").mkdir(parents=True)
-    config = work / ".config/omarchy/keystroke.json"
+    config = work / ".config/omarchy/nixarchy-menu.json"
     config.write_text(json.dumps({"version": 1, "matching": {"mode": "off"}, "providers": {"translate": {"enabled": True}}}))
 
     (work / "shell.qml").write_text('''import QtQuick
@@ -60,9 +60,9 @@ ShellRoot {
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function indexOf(title) { for (var i = 0; i < palette.rows.length; i++) if (palette.rows[i].title === title) return i; return -1 }
  function config(providers) { return JSON.stringify({ version: 1, matching: { mode: "off" }, providers: providers }) }
- property string captureDir: "''' + os.environ.get('KEYSTROKE_CAPTURE_DIR', '') + '''"
+ property string captureDir: "''' + os.environ.get('NIXARCHY_MENU_CAPTURE_DIR', '') + '''"
  property bool capturing: false
- // With KEYSTROKE_CAPTURE_DIR set, the palette window is saved as PNGs; the stages wait for each grab.
+ // With NIXARCHY_MENU_CAPTURE_DIR set, the palette window is saved as PNGs; the stages wait for each grab.
  function capture(name) {
    if (!captureDir) return
    var win = null, list = palette.resources
@@ -71,7 +71,7 @@ ShellRoot {
    test.capturing = true
    win.contentItem.grabToImage(function(r) { r.saveToFile(captureDir + "/" + name + ".png"); test.capturing = false })
  }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    if (test.capturing) return
    switch (test.stage) {
@@ -208,8 +208,8 @@ ShellRoot {
 }
 ''')
 
-    if os.environ.get("KEYSTROKE_CAPTURE_DIR"):
-        Path(os.environ["KEYSTROKE_CAPTURE_DIR"]).mkdir(parents=True, exist_ok=True)
+    if os.environ.get("NIXARCHY_MENU_CAPTURE_DIR"):
+        Path(os.environ["NIXARCHY_MENU_CAPTURE_DIR"]).mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), PATH=f"{fake}:{os.environ.get('PATH', '')}",
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)

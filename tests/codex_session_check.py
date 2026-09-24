@@ -2,8 +2,8 @@
 """Exercise production QML transport/session and view against a fake server."""
 import os,json,pathlib,tempfile,subprocess
 root=pathlib.Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-codex-test-') as temp:
- p=pathlib.Path(temp);(p/'.local/state/keystroke/questions').mkdir(parents=True)
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-codex-test-') as temp:
+ p=pathlib.Path(temp);(p/'.local/state/nixarchy-menu/questions').mkdir(parents=True)
  (p/'codex').symlink_to(root/'codex');(p/'qs').symlink_to('/usr/share/omarchy/shell')
  for name in ['ui','voice']: (p/name).symlink_to(root/name)
  for name in ['Commons','Ui']: (p/name).symlink_to('/usr/share/omarchy/shell/'+name)
@@ -15,7 +15,7 @@ ShellRoot {
  id: test
  property int stage: 0
  function check(value,message) { if (!value) { console.log("FAIL",message); Qt.quit(); throw Error(message) } }
- CodexSession { id: session; home: %s; server.command: ["python3",%s] }
+ CodexSession { id: session; host: QtObject { property bool stateReady: true }; home: %s; server.command: ["python3",%s] }
  Window { visible: true; width: 700; height: 580
    ConversationView { id: view; anchors.fill: parent; session: session; host: stub }
  }
@@ -52,7 +52,7 @@ ShellRoot {
      session.phase="running";session.mode="agent";session.turnId="approval-test";
      session.handleRequest(901,"item/fileChange/requestApproval",{threadId:session.threadId,turnId:"approval-test",reason:"fixture permission"});test.check(session.approvals.length===1,"agent approval routed");
      keys.keyClick(Qt.Key_Return);test.check(!session.approvals.length,"decline resolves approval");session.phase="idle";session.mode="quick";session.turnId="";
-     view.grabToImage(function(result) { result.saveToFile("/tmp/keystroke-codex-preview.png") }); test.check(session.recent.length===1,"durable recent index")
+     view.grabToImage(function(result) { result.saveToFile("/tmp/nixarchy-menu-codex-preview.png") }); test.check(session.recent.length===1,"durable recent index")
      session.draft="slow question";session.submit();test.stage=2
    } else if(test.stage===2 && session.phase==="running") {session.stop();test.stage=3}
    else if(test.stage===3 && !session.busy) {

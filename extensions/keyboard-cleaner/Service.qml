@@ -6,7 +6,7 @@ import "core/Parser.js" as Parser
 // Keyboard Cleaner: block every keyboard and pointer for a while so they
 // can be wiped without typing anything.
 //
-// Keystroke creates this object when the extension is turned on, injects
+// nixarchy-menu creates this object when the extension is turned on, injects
 // `shell`, `extension` and `omarchyPath`, reads `provider`, and destroys it
 // when the extension is turned off. A block runs bin/keyboard-cleaner,
 // which asks Hyprland to switch each device off (`hl.device({ enabled =

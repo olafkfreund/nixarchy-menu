@@ -16,7 +16,7 @@ Item {
   property string error: ""
   property string activity: ""
   property string mode: "quick"
-  property string cwd: home + "/.local/state/keystroke/questions"
+  property string cwd: home + "/.local/state/nixarchy-menu/questions"
   property string phase: "idle"
   readonly property bool busy: phase !== "idle"
   visible: false
@@ -56,7 +56,7 @@ Item {
   }
   FileView {
     id: historyFile
-    path: root.home + "/.local/state/keystroke/codex.json"
+    path: root.host && root.host.stateReady ? root.home + "/.local/state/nixarchy-menu/codex.json" : ""
     atomicWrites: true
     printErrors: false
     onLoaded: {
@@ -70,7 +70,7 @@ Item {
     if (!Policy.safeId(threadId)) return
     var row = {id: threadId, title: title, cwd: cwd, mode: mode, draft: draft, updated: Date.now()}
     recent = [row].concat(recent.filter(x => x.id !== threadId)).slice(0, 40)
-    historyFile.setText(JSON.stringify({version: 1, recent: recent}, null, 2) + "\n")
+    if (historyFile.path) historyFile.setText(JSON.stringify({version: 1, recent: recent}, null, 2) + "\n")
     changed()
   }
   function warm() { rpc.ensure() }
@@ -83,7 +83,7 @@ Item {
     saveRecent(); paint.stop(); deltas = ({})
     epoch++; threadId = ""; turnId = ""; loaded = false; messages = []
     mode = agentCwd ? "agent" : "quick"
-    cwd = agentCwd || home + "/.local/state/keystroke/questions"
+    cwd = agentCwd || home + "/.local/state/nixarchy-menu/questions"
     title = mode === "agent" ? "Task" : "Quick question"
     draft = String(text || ""); error = ""; activity = ""; submitted = ""
     if (draft.trim()) submit()
@@ -103,7 +103,7 @@ Item {
     var p = Policy.start(home, settings, rpc.configuration)
     if (mode === "agent") {
       p.cwd = cwd; p.environments = null; p.sandbox = "workspace-write"; p.approvalPolicy = "on-request"; p.approvalsReviewer = "user"
-      p.baseInstructions = "You are Codex, an agent embedded in Keystroke on Omarchy Linux. Complete the user's task using the available tools. Inspect before changing, verify the result, and report concisely. Respect the working scope and request additional permission when needed. Never edit /usr/share/omarchy. For desktop configuration, read and follow the installed Omarchy skill."
+      p.baseInstructions = "You are Codex, an agent embedded in nixarchy-menu on Omarchy Linux. Complete the user's task using the available tools. Inspect before changing, verify the result, and report concisely. Respect the working scope and request additional permission when needed. Never edit /usr/share/omarchy. For desktop configuration, read and follow the installed Omarchy skill."
       p.config = {"features.hooks": false, "model_reasoning_effort": "low", "web_search": "live"}
     }
     if (threadId) {

@@ -1,12 +1,12 @@
 # Translate
 
-Google Translate inside the [Keystroke](../../README.md) command palette, without an account or an API key. Type `tr bonjour` and the translation is the top row; Enter copies it, Ctrl+Enter pastes it into the app you came from. The reverse translation sits under it as a sanity check, every other target language you configured follows, and an editor view shows all of them for longer text, with dictation.
+Google Translate inside the [nixarchy-menu](../../README.md) command palette, without an account or an API key. Type `tr bonjour` and the translation is the top row; Enter copies it, Ctrl+Enter pastes it into the app you came from. The reverse translation sits under it as a sanity check, every other target language you configured follows, and an editor view shows all of them for longer text, with dictation.
 
 It is a port of the Raycast [google-translate](https://github.com/raycast/extensions/tree/a5090e97075f2e65e331127456797d9561b5e2b0/extensions/google-translate) extension: same keyless endpoint, same same-language fallback and double-way translation, same preferences where they make sense in a palette.
 
 ## Turn it on
 
-Extensions ship with Keystroke switched off. Type `ext`, open **Extensions → Translate**, and confirm **Enabled** (or Keystroke Settings → Translate → Enabled).
+Extensions ship with nixarchy-menu switched off. Type `ext`, open **Extensions → Translate**, and confirm **Enabled** (or nixarchy-menu Settings → Translate → Enabled).
 
 ## Use
 
@@ -38,7 +38,7 @@ Two-letter codes that are also English words (`it`, `is`, `no`, `so`, `to`, `hi`
 
 ## Settings
 
-Keystroke Settings → Translate:
+nixarchy-menu Settings → Translate:
 
 - **Target languages**: codes in order, default `en,fr`. Use the picker described above.
 - **Translate from**: Detect by default; a fixed source language when detection gets it wrong.
@@ -48,7 +48,7 @@ Keystroke Settings → Translate:
 - **Offer pronunciation playback**: a Speak row and Ctrl+S in the editor, through `mpv` (default off).
 - **HTTP proxy**: passed to `curl --proxy`; the escape hatch for rate limiting and geo-blocking.
 
-Values live under `providers.translate` in `~/.config/omarchy/keystroke.json`.
+Values live under `providers.translate` in `~/.config/omarchy/nixarchy-menu.json`.
 
 ## What it does on your machine
 
@@ -56,7 +56,7 @@ Everything below only happens once the extension is turned on.
 
 - **Network**: `curl` to `https://translate.google.com/translate_a/single`, the undocumented endpoint the translate.google.com page uses (`client=dict-chrome-ex`), the same one the Raycast extension calls. It sends the text, the source and target codes and nothing else: no account, no key, no token. Requests go out 350 ms after you stop typing, one per (text, source, target); responses are cached for the session so backspacing and repeats are free. An HTTP 429 pauses requests for a minute. The `tk` token the Raycast port computes is not validated for this client and is not sent. Text over 2 KB in the URL goes as a POST body. *Speak* streams `https://translate.google.com/translate_tts` through `mpv`. *Open in Google Translate* opens the website with `xdg-open`.
 - **Processes on every palette open**: `wl-paste` to read the selection (off with *Offer the selected text*). Once, `command -v mpv` when playback is on.
-- **Paste**: `wl-copy` followed by `wtype -M shift -k Insert -m shift`, the same Shift+Insert Keystroke's dictation uses. The text is a positional argument, never part of a shell string.
+- **Paste**: `wl-copy` followed by `wtype -M shift -k Insert -m shift`, the same Shift+Insert nixarchy-menu's dictation uses. The text is a positional argument, never part of a shell string.
 - **Notifications**: `omarchy-notification-send` when a translated selection has been copied or pasted, or failed.
 - No files are written. Nothing runs before the switch. No sudo, no daemons, no downloads.
 
@@ -80,4 +80,4 @@ Everything below only happens once the extension is turned on.
 - `core/Translate.js`: the query grammar, request building, response parsing and rows as pure functions.
 - `core/Languages.js`: the 250 languages Google accepts, from the Raycast extension (MIT).
 - `assets/icon.svg`: the icon on rows, in Settings and on the Extensions screen.
-- `tests/tst_translate.qml`: unit tests over captured responses, run by `bin/keystroke check-extensions`; `tests/palette_check.py` drives the real palette offscreen with a fake `curl` (set `KEYSTROKE_CAPTURE_DIR` to a folder to get PNGs of the rows and the view).
+- `tests/tst_translate.qml`: unit tests over captured responses, run by `bin/nixarchy-menu check-extensions`; `tests/palette_check.py` drives the real palette offscreen with a fake `curl` (set `NIXARCHY_MENU_CAPTURE_DIR` to a folder to get PNGs of the rows and the view).

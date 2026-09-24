@@ -4,13 +4,13 @@ import "../core/Settings.js" as Settings
 import "../core/Extensions.js" as Extensions
 import "../core/Patterns.js" as Patterns
 
-// The Extensions screen: every extension Keystroke ships in extensions/ and
-// every folder under ~/.local/share/keystroke/extensions, each with its
+// The Extensions screen: every extension nixarchy-menu ships in extensions/ and
+// every folder under ~/.local/share/nixarchy-menu/extensions, each with its
 // switch. Turning one on asks for confirmation, then providers/Registry.qml
 // loads its service at once; turning it off destroys the service. An
 // extension that declares a setup script gets a "Run setup" row that opens a
 // visible terminal. Nothing here touches the network or installs anything:
-// extensions arrive with Keystroke's own updates.
+// extensions arrive with nixarchy-menu's own updates.
 Item {
   id: root
   property var host: null
@@ -21,7 +21,7 @@ Item {
     name: "Extensions",
     icon: Extensions.ICON,
     color: "#8bceb4",
-    description: "Turn the extensions that ship with Keystroke on and off",
+    description: "Turn the extensions that ship with nixarchy-menu on and off",
     settings: [],
     query: function(ctx) { return root.query(ctx) },
     activate: function(row, ctx) { return root.activate(row, ctx) }

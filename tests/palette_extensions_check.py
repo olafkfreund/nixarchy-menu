@@ -5,9 +5,9 @@ A copy of the project (with the shipped extensions/timer) and a fake HOME with
 a local extensions folder holding three more: a probe that must become a
 provider once it is turned on (with `shell`, `extension` and `omarchyPath`
 injected and its rows answering a query), one whose Service.qml does not
-compile, and one whose folder name is not a valid id. The real Keystroke.qml
+compile, and one whose folder name is not a valid id. The real NixarchyMenu.qml
 scans both folders at creation and on every open. Nothing is loaded until the
-switch in keystroke.json says so; turning the switch off destroys the service.
+switch in nixarchy-menu.json says so; turning the switch off destroys the service.
 
 The shipped timer also exercises the bar item API: starting a timer through
 its service puts a countdown on the palette's barList at once, the real
@@ -23,18 +23,18 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-extensions-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-extensions-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
     source.write_text("\n".join(line for line in qml.splitlines() if "exclusionMode:" not in line and "WlrLayershell." not in line))
 
-    local = work / ".local/share/keystroke/extensions"
+    local = work / ".local/share/nixarchy-menu/extensions"
     def extension(folder, name, **fields):
         d = local / folder
         d.mkdir(parents=True)
@@ -68,7 +68,7 @@ QtObject {
     (broken / "Service.qml").write_text("import QtQuick\nQtObject { readonly property var provider: ({ apiVersion: 1, name: \"Broken\" \n")
     extension("Bad_Name", "Bad")
     (work / ".config/omarchy").mkdir(parents=True)
-    config = work / ".config/omarchy/keystroke.json"
+    config = work / ".config/omarchy/nixarchy-menu.json"
     config.write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
 
     (work / "shell.qml").write_text('''import QtQuick
@@ -87,10 +87,10 @@ ShellRoot {
  function titles() { return palette.rows.map(function(r) { return r.title }) }
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function config(on) { var c = { version: 1, matching: { mode: "off" }, providers: {} }; for (var i = 0; i < on.length; i++) c.providers[on[i]] = { enabled: true }; return JSON.stringify(c) }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  // The bar widget finds the palette the way the shell exposes it: a Loader per panel plugin, keyed by plugin id.
  QtObject { id: paletteLoader; property var item: palette }
- QtObject { id: fakeShell; property var panelLoaders: ({ "evindor.keystroke": paletteLoader }) }
+ QtObject { id: fakeShell; property var panelLoaders: ({ "nixarchy.menu": paletteLoader }) }
  QtObject {
    id: fakeBar
    property var shell: fakeShell

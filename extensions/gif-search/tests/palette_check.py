@@ -9,20 +9,20 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
-with tempfile.TemporaryDirectory(prefix="keystroke-gifs-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-gifs-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text().replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
     source.write_text("\n".join(line for line in qml.splitlines() if "exclusionMode:" not in line and "WlrLayershell." not in line))
     # Local preview avoids any media requests during the offscreen test.
     preview = work / "preview.gif"
     preview.write_bytes(base64.b64decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"))
-    if os.environ.get("KEYSTROKE_GIF_PREVIEW"):
-        shutil.copyfile(os.environ["KEYSTROKE_GIF_PREVIEW"], preview)
+    if os.environ.get("NIXARCHY_MENU_GIF_PREVIEW"):
+        shutil.copyfile(os.environ["NIXARCHY_MENU_GIF_PREVIEW"], preview)
     view = project / "extensions/gif-search/GifView.qml"
     view.write_text(view.read_text().replace("source: tile.modelData.preview", "source: " + json.dumps(preview.as_uri())))
     helper = project / "extensions/gif-search/bin/copy.py"
@@ -48,8 +48,8 @@ print(json.dumps({'data': [] if term == 'empty' else [gif(offset+i) for i in ran
 ''')
     script("wl-copy", "#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\nPath(" + repr(str(work / "copied")) + ").write_bytes(sys.stdin.buffer.read())\n")
     (work / ".config/omarchy").mkdir(parents=True)
-    (work / ".config/omarchy/keystroke.json").write_text('{"version":1,"matching":{"mode":"off"}}')
-    capture = os.environ.get("KEYSTROKE_CAPTURE_DIR", "")
+    (work / ".config/omarchy/nixarchy-menu.json").write_text('{"version":1,"matching":{"mode":"off"}}')
+    capture = os.environ.get("NIXARCHY_MENU_CAPTURE_DIR", "")
     if capture:
         Path(capture).mkdir(parents=True, exist_ok=True)
     (work / "shell.qml").write_text('''import QtQuick
@@ -73,7 +73,7 @@ ShellRoot {
  }
  function check(ok, message) { if (!ok) { failures++; console.log("FAIL", message) } }
  function config(enabled) { return JSON.stringify({version:1, matching:{mode:"off"}, providers:{"gif-search":{enabled:enabled, prefix:"reaction"}}}) }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    switch (test.stage) {
    case 0:

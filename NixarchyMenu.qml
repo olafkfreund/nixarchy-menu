@@ -20,7 +20,7 @@ import "core/Motion.js" as Motion
 import "core/Commands.js" as Commands
 import "matching" as Matching
 
-// Keystroke: an extension-first command palette that replaces the Omarchy
+// nixarchy-menu: an extension-first command palette that replaces the Omarchy
 // menu. Hosted by omarchy-shell as a `menu` plugin (see manifest.json).
 Item {
   id: root
@@ -34,8 +34,11 @@ Item {
   readonly property var appLibrary: applicationLibrary.library
   ApplicationLibrary { id: applicationLibrary; hostShell: root.shell; omarchyPath: root.omarchyPath }
   readonly property string home: Quickshell.env("HOME")
-  readonly property string configPath: home + "/.config/omarchy/keystroke.json"
-  readonly property string usagePath: home + "/.local/state/keystroke/usage.json"
+  readonly property string configPath: home + "/.config/omarchy/nixarchy-menu.json"
+  readonly property string usagePath: home + "/.local/state/nixarchy-menu/usage.json"
+  // False until helpers/migrate-state.sh has copied the pre-rename state to
+  // the nixarchy-menu paths; readers of those paths stay empty until then.
+  property bool stateReady: false
 
   // ------------------------------------------------------------ lifecycle
   function open(payloadJson) {
@@ -129,7 +132,7 @@ Item {
   function matchingModel() { return { schemas: root.matchingSchema, values: root.matchingSettings, status: matchingSession.status, error: matchingSession.error } }
   Matching.Session {
     id: matchingSession
-    enabled: root.matchingSettings.mode !== "off"
+    enabled: root.stateReady && root.matchingSettings.mode !== "off"
     model: root.matchingSettings.model
     onChanged: if (root.opened && !root.confirmPending) root.requery({ catalog: false })
   }
@@ -242,7 +245,7 @@ Item {
     if (!entry || root.providerEnabled(entry)) return
     root.scope = ""
     root.scopeTitle = ""
-    root.statusMessage = entry.provider.name + " is disabled in Keystroke Settings"
+    root.statusMessage = entry.provider.name + " is disabled in nixarchy-menu Settings"
   }
   function applyConfigText(text) {
     var parsed = Settings.parse(text)
@@ -254,11 +257,11 @@ Item {
     if (root.configError) throw new Error(root.configError)
     root.config = next
     root.paletteSettings = Settings.values(next, ["palette"], root.paletteSchema)
-    configFile.setText(Settings.serialize(next))
+    if (root.stateReady) configFile.setText(Settings.serialize(next))
   }
   FileView {
     id: configFile
-    path: root.configPath
+    path: root.stateReady ? root.configPath : ""
     watchChanges: true
     atomicWrites: true
     printErrors: false
@@ -320,7 +323,7 @@ Item {
     onCopied: root.cancel(true)
     onFailed: function(message) {
       if (root.opened) root.errorMessage = message
-      else Quickshell.execDetached(["notify-send", "Keystroke dictation", message])
+      else Quickshell.execDetached(["notify-send", "nixarchy-menu dictation", message])
     }
   }
   function dictationAccept(alternate) {
@@ -395,12 +398,21 @@ Item {
   property var usage: ({})
   FileView {
     id: usageFile
-    path: root.usagePath
+    path: root.stateReady ? root.usagePath : ""
     printErrors: false
     onLoaded: root.usage = Frecency.parse(text())
     onLoadFailed: root.usage = ({})
   }
-  Process { id: stateDir; command: ["mkdir", "-p", root.home + "/.local/state/keystroke"]; running: true }
+  // Copies the pre-rename state once and creates the state dir. A failed copy
+  // keeps stateReady false for this session: nothing is read or written at the
+  // new paths, so the next start can still copy the old state (the migration
+  // never overwrites a path that exists). The script notifies on failure.
+  Process {
+    id: migrateState
+    command: ["sh", Qt.resolvedUrl("helpers/migrate-state.sh").toString().replace("file://", "")]
+    running: true
+    onExited: function(code) { root.stateReady = code === 0; providerRegistry.scan() }
+  }
   function remember(row) {
     if (!row.remember) return
     var now = Date.now() / 1000
@@ -408,7 +420,7 @@ Item {
     var queryKey = Frecency.queryKey(row.providerKey, row.id, root.voiceRawText || search.text, root.scope)
     if (queryKey) next = Frecency.record(next, queryKey, now)
     root.usage = next
-    usageFile.setText(Frecency.serialize(root.usage))
+    if (root.stateReady) usageFile.setText(Frecency.serialize(root.usage))
   }
   function bonusFor(row) {
     if (!row.remember) return 0
@@ -662,7 +674,7 @@ Item {
     providerRegistry.scan()
     for (var i = 0; i < providerRegistry.entries.length; i++) {
       var p = providerRegistry.entries[i].provider
-      if (typeof p.opened === "function") { try { p.opened() } catch (e) { console.warn("keystroke: provider opened() threw", e) } }
+      if (typeof p.opened === "function") { try { p.opened() } catch (e) { console.warn("nixarchy-menu: provider opened() threw", e) } }
     }
     voice.refresh()
   }
@@ -793,7 +805,7 @@ Item {
           seen[candidate.uid] = true
           rows.push(root.describe(candidate))
         }
-      } catch (e) { console.warn("keystroke: provider", entry.key, "catalog failed:", e) }
+      } catch (e) { console.warn("nixarchy-menu: provider", entry.key, "catalog failed:", e) }
     }
     cache = { scope: scope, rows: rows, pending: pend, chrome: SmartMatch.hasChrome(rows), documents: ({}), documentKeys: [], lexical: { text: null, scores: null } }
     root.catalogCache = cache
@@ -893,7 +905,7 @@ Item {
       }
     } catch (e) {
       result.error = entry.provider.name + ": " + e
-      console.warn("keystroke: provider", entry.key, "failed:", e)
+      console.warn("nixarchy-menu: provider", entry.key, "failed:", e)
     }
     return result
   }
@@ -1182,7 +1194,7 @@ Item {
     else if (type === "copy") Quickshell.execDetached(["wl-copy", "--", String(effect.text === undefined ? "" : effect.text)])
     else if (type === "app" && root.appLibrary) root.appLibrary.launch(effect.id, effect.name)
     else if (type === "edit") {
-      if (!root.configError) configFile.setText(Settings.serialize(root.config))
+      if (!root.configError && root.stateReady) configFile.setText(Settings.serialize(root.config))
       Util.execArgv(["xdg-open", root.configPath])
     }
   }
@@ -1255,7 +1267,7 @@ Item {
       borderSpec: root.borderSpec
       clip: true
       Accessible.role: Accessible.Dialog
-      Accessible.name: "Keystroke command palette"
+      Accessible.name: "nixarchy-menu command palette"
       MouseArea { anchors.fill: parent; onClicked: {} }
 
       // A provider view covers the palette, so the host paints the backdrop
@@ -1604,7 +1616,7 @@ Item {
           Text {
             text: voice.phase === "listening" ? (root.voiceTrigger === "hold" ? "Listening… release to finish" : "Listening… tap the hotkey again or press ↵ to finish")
                 : voice.phase === "transcribing" ? "Finishing transcript…" : voice.phase === "starting" ? "Starting voxtype…"
-                : root.pending && root.showLoading ? "Searching…" : root.errorMessage ? "Needs attention: " + root.errorMessage : root.statusMessage || (root.current.providerName ? root.current.providerName : "Keystroke")
+                : root.pending && root.showLoading ? "Searching…" : root.errorMessage ? "Needs attention: " + root.errorMessage : root.statusMessage || (root.current.providerName ? root.current.providerName : "nixarchy-menu")
             textFormat: Text.PlainText; elide: Text.ElideRight; width: Math.min(implicitWidth, card.width * 0.5)
             color: root.errorMessage ? Color.urgent : root.muted; font.family: root.fontFamily; font.pixelSize: Style.font.bodySmall
             anchors.verticalCenter: parent.verticalCenter

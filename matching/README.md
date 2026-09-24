@@ -1,18 +1,18 @@
 # Smart Match runtime
 
 The default is **Voice and text**, using **Small (2M)**. Settings are under
-Keystroke Settings > Matching. **Only voice** leaves typed queries on the ordinary
+nixarchy-menu Settings > Matching. **Only voice** leaves typed queries on the ordinary
 matcher. **Off** terminates the helper (including an in-progress installation),
 clears pending results and releases the model; downloaded files remain for reuse.
 **Large (8M)** downloads once when selected and first used. Both models run on CPU.
 An idle helper also exits after two minutes and reloads on the next eligible query.
 
-Installation from `bin/keystroke install` prepares Small. A plugin installed through
+Installation from `bin/nixarchy-menu install` prepares Small. A plugin installed through
 Omarchy prepares the selected model lazily on its first eligible query. Setup runs
 outside the shell UI process, under the user's account, with no system package
 changes, and needs network access for the first download. A failed setup keeps
 lexical search working and adds a Retry Smart Match row to the Matching settings
-screen. `bin/keystroke matching [small|large]` can prepare models without enabling
+screen. `bin/nixarchy-menu matching [small|large]` can prepare models without enabling
 or restarting the plugin.
 
 ## Engine
@@ -28,7 +28,7 @@ when its digest matches. It then serves the model through the first of:
    (`keystroke-matching.json`) names the machine architecture, the fingerprint
    of the engine source it was built from and the digest-pinned image it was
    built in; the binary is used only while machine and fingerprint match the
-   running machine and the checked-out source. `bin/keystroke engine`
+   running machine and the checked-out source. `bin/nixarchy-menu engine`
    (`matching/engine/build-prebuilt.sh`) rebuilds it in that container after an
    engine change, `tests/matching_engine_check.py` fails while it is stale, and
    CI rebuilds and byte-compares it on every push and attests it on releases
@@ -54,7 +54,7 @@ a 1,500-document catalog embedded in 5 ms, a query answered in under 0.1 ms.
 The Python worker measured 92 MiB resident and about 250 ms to ready.
 
 The engine, runtime and models live in
-`${XDG_DATA_HOME:-~/.local/share}/keystroke/matching/` (`engine/<source hash>/`,
+`${XDG_DATA_HOME:-~/.local/share}/nixarchy-menu/matching/` (`engine/<source hash>/`,
 `runtime/`, `models/<name>/<revision>/`). Model revisions and digests are fixed in
 `helpers/matching-start.py`. Subsequent loading is local-only. No query or catalog
 text is sent to a remote inference service or saved by the worker. Nothing is

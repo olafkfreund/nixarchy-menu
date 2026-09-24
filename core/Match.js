@@ -13,7 +13,7 @@
 //
 // Queries with several words are AND-ed, each word scored on its own, so
 // "ai prov" finds "AI & Web Search › Preferred assistant" in either order.
-// Typing "keysepro" walks the path Keystroke Settings › … › provider: the
+// Typing "nixsepro" walks the path nixarchy-menu Settings › … › provider: the
 // path is one haystack, and letters may jump from word start to word start.
 
 var TIERS = { answer: 3, item: 2, fallback: 1 }
@@ -24,7 +24,7 @@ var TIERS = { answer: 3, item: 2, fallback: 1 }
 // then drops the alignments that are mostly the latter ("chrome" scattered
 // through "Clipboard History … existing history").
 // A gap never costs more than GAP_CAP: skipping a whole breadcrumb segment
-// ("keysepro" jumping from Settings to provider) is as cheap as skipping a
+// ("nixsepro" jumping from Settings to provider) is as cheap as skipping a
 // few letters, so a walk through the path beats an alias with short gaps.
 var SCORE_MATCH = 8, GAP_START = 3, GAP_EXTEND = 1, GAP_CAP = 8
 var BONUS_BOUNDARY = 8, BONUS_WHITE = 10, BONUS_DELIMITER = 9, BONUS_CAMEL = 7, BONUS_CONSECUTIVE = 4
@@ -257,7 +257,7 @@ function wordPrefixed(terms, text) {
 // title: the row's own name. keywords: identifiers a user may abbreviate
 // (aliases, ids, config keys, option values), fuzzy like the title. path: the
 // breadcrumb ending in the title, for rows reachable through submenus
-// ("Keystroke Settings › AI & Web Search › Preferred assistant").
+// ("nixarchy-menu Settings › AI & Web Search › Preferred assistant").
 // description: synonyms and prose, matched by word prefix only.
 function match(query, title, keywords, path, description) {
   var q = String(query || "").trim()

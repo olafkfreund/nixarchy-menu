@@ -9,12 +9,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-palette-motion-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-motion-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git','.claude','.agents','.codex','tests','__pycache__'))
     (work/'qs').symlink_to('/usr/share/omarchy/shell')
-    source = project/'Keystroke.qml'
+    source = project/'NixarchyMenu.qml'
     qml = source.read_text()
     qml = qml.replace('  id: root\n', '  id: root\n  property alias testList: resultList\n  property alias testShift: levelShift\n  property alias testCard: card\n  property alias testPanel: panel\n', 1)
     qml = qml.replace('  PanelWindow {','  Window {\n    transientParent: null\n    width: 1000; height: 800')
@@ -34,7 +34,7 @@ ShellRoot {
  function after(ms, fn) { steps.push({ms: ms, fn: fn}) }
  function next() { if (step >= steps.length) { console.log("PASS palette motion"); Qt.quit(); return } var s = steps[step++]; stepTimer.interval = s.ms; stepTimer.fn = s.fn; stepTimer.restart() }
  Timer { id: stepTimer; property var fn: null; onTriggered: { fn(); test.next() } }
- Keystroke { id: palette; omarchyPath:"/usr/share/omarchy"; onFlashed: function(uid) { test.flashes.push(uid) } }
+ NixarchyMenu { id: palette; omarchyPath:"/usr/share/omarchy"; onFlashed: function(uid) { test.flashes.push(uid) } }
  ResultRow { id: row; width: 400; flashRise: 20; flashFall: 60; selectedText: "#ffffff" }
  function flashLayer() { for (var i = 0; i < row.children.length; i++) { var c = row.children[i]; if (c.color !== undefined && String(c.color) === "#ffffff" && c.radius !== undefined) return c } return null }
  function fixture() {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks helpers/timezone.py, the one on-demand helper Keystroke keeps.
+"""Checks helpers/timezone.py, the one on-demand helper nixarchy-menu keeps.
 
 Every case runs with the clock fixed at 2026-09-09 12:00 UTC (a Wednesday)
 so relative dates and "now" answers are deterministic.

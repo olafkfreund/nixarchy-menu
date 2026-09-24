@@ -8,10 +8,10 @@ import "../core/Extensions.js" as ExtensionsModel
 
 // Instantiates the bundled providers and hosts the extensions. An extension
 // is a folder with an extension.json and a Service.qml whose root object
-// exposes `readonly property var provider`; the folders ship in Keystroke's
-// own extensions/ directory, and ~/.local/share/keystroke/extensions holds
+// exposes `readonly property var provider`; the folders ship in nixarchy-menu's
+// own extensions/ directory, and ~/.local/share/nixarchy-menu/extensions holds
 // the ones the user is writing. Every extension is off until switched on in
-// keystroke.json (providers.<id>.enabled), and one that is off is never
+// nixarchy-menu.json (providers.<id>.enabled), and one that is off is never
 // compiled or instantiated: the registry lists it from its extension.json
 // alone. Switching one on creates its service here, injecting `shell`,
 // `extension` and `omarchyPath`; switching it off destroys the service.
@@ -74,7 +74,7 @@ Item {
       var p = service && service.instance ? service.instance.provider : null
       if (service && service.problem) issues.push({ id: id, message: service.problem })
       else if (service && (!p || typeof p !== "object")) issues.push({ id: id, message: manifest.entry + " does not expose a provider object" })
-      else if (service && p.apiVersion !== 1) issues.push({ id: id, message: "Needs Keystroke provider API 1, provider declares " + p.apiVersion })
+      else if (service && p.apiVersion !== 1) issues.push({ id: id, message: "Needs nixarchy-menu provider API 1, provider declares " + p.apiVersion })
       else if (service && (typeof p.query !== "function" || !p.name)) issues.push({ id: id, message: "Provider must define name and query(ctx)" })
       else if (service) { out.push(entry(id, p, "extension", id, p.name, issues, manifest, true)); continue }
       out.push(entry(id, ExtensionsModel.placeholder(manifest), "extension", id, manifest.name, issues, manifest, false))
@@ -140,7 +140,7 @@ Item {
     if ("extension" in instance) instance.extension = JSON.parse(JSON.stringify(manifest))
     return { instance: instance, problem: "" }
   }
-  // The shell injects Keystroke's `shell` after creating the palette; pass it
+  // The shell injects nixarchy-menu's `shell` after creating the palette; pass it
   // on. The switches live in the config: every change reconciles.
   Connections {
     target: root.host

@@ -64,7 +64,7 @@
     "settings": {
       "enabled": true
     },
-    "example.keystroke-hello": {
+    "example.hello": {
       "enabled": false,
       "greeting": "Hello"
     },
@@ -78,7 +78,7 @@
     "extensions": {
       "enabled": true
     },
-    "io.github.evindor.keystroke-timer": {
+    "timer": {
       "enabled": true,
       "defaultMinutes": 5,
       "notify": true

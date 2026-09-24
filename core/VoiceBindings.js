@@ -2,8 +2,9 @@
 
 // The two Hyprland bindings that make "hold the hotkey to dictate" work. They
 // live in the user's ~/.config/hypr/bindings.lua inside a marked block that
-// Keystroke Settings › Voice writes and rewrites; everything outside the
-// markers is left alone.
+// nixarchy-menu Settings › Voice writes and rewrites; everything outside the
+// markers is left alone. A block under the legacy Keystroke markers is found
+// too: it reads as outdated, and apply/remove rewrite it in place.
 //
 // Hyprland fires a long-press bind (`o`) once the key has been down for the
 // keyboard repeat delay, whichever order the keys are released in later, so
@@ -12,8 +13,10 @@
 // modifier's own release, so lifting the chord in either order ends the
 // recording.
 
-var BEGIN = "-- >>> keystroke voice: hold the palette hotkey to dictate (written by Keystroke Settings › Voice)"
-var END = "-- <<< keystroke voice"
+var BEGIN = "-- >>> nixarchy-menu voice: hold the palette hotkey to dictate (written by nixarchy-menu Settings › Voice)"
+var END = "-- <<< nixarchy-menu voice"
+var LEGACY_BEGIN = "-- >>> keystroke voice: hold the palette hotkey to dictate (written by Keystroke Settings › Voice)"
+var LEGACY_END = "-- <<< keystroke voice"
 var HOLD = "omarchy-shell shell call omarchy.menu voiceHold '{}'"
 var RELEASE = "omarchy-shell shell call omarchy.menu voiceRelease '{}'"
 
@@ -39,14 +42,18 @@ function block(keys) {
   return lines.join("\n")
 }
 
+function findPair(s, begin, end) {
+  var a = s.indexOf(begin)
+  if (a < 0) return null
+  var b = s.indexOf(end, a)
+  if (b < 0) return { start: a, end: s.length, body: s.slice(a) }
+  var stop = b + end.length
+  return { start: a, end: stop, body: s.slice(a, stop) }
+}
+
 function find(text) {
   var s = String(text || "")
-  var a = s.indexOf(BEGIN)
-  if (a < 0) return null
-  var b = s.indexOf(END, a)
-  if (b < 0) return { start: a, end: s.length, body: s.slice(a) }
-  var end = b + END.length
-  return { start: a, end: end, body: s.slice(a, end) }
+  return findPair(s, BEGIN, END) || findPair(s, LEGACY_BEGIN, LEGACY_END)
 }
 
 // "missing" | "outdated" | "installed"

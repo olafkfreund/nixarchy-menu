@@ -1,6 +1,6 @@
 # Matching engine provenance
 
-Keystroke ships one compiled executable, `matching/bin/keystroke-matching`, the
+nixarchy-menu ships one compiled executable, `matching/bin/keystroke-matching`, the
 Smart Match engine (`matching/engine`, Rust). It is committed so that users
 need neither a Rust toolchain nor a build step. This note shows how anyone can
 confirm that the committed bytes come from the committed source, without
@@ -66,8 +66,8 @@ workflow that produced the claim. To check it for a given commit:
 
 ```sh
 gh attestation verify matching/bin/keystroke-matching \
-  --repo evindor/keystroke \
-  --signer-workflow evindor/keystroke/.github/workflows/engine.yml \
+  --repo olafkfreund/nixarchy-menu \
+  --signer-workflow olafkfreund/nixarchy-menu/.github/workflows/engine.yml \
   --source-digest <full commit SHA>
 ```
 
@@ -78,7 +78,7 @@ bundle.
 
 ## Updating the binary
 
-After editing anything under `matching/engine`, run `bin/keystroke engine` (the
+After editing anything under `matching/engine`, run `bin/nixarchy-menu engine` (the
 same script without `--check`) and commit the binary together with the source
 and the refreshed manifest. To move to a newer Rust, change `IMAGE` in the
 script to the new tag and digest (`docker buildx imagetools inspect` or the

@@ -5,26 +5,26 @@ import qs.Ui
 
 // Adapted from Omarchy's menu bar widget. Toggling through `omarchy.menu`
 // lets PluginRegistry route the call to whichever menu implementation is
-// enabled, so this button keeps working if Keystroke is disabled.
+// enabled, so this button keeps working if nixarchy-menu is disabled.
 //
 // After the menu button come the palette's bar items: what a provider asked
 // to show next to the menu (the Timer extension's countdown) through
 // host.setBarItem. The running palette is found through the shell's panel
-// loaders (Keystroke is keepLoaded, so the instance exists once the shell
+// loaders (nixarchy-menu is keepLoaded, so the instance exists once the shell
 // has loaded its plugins) and its barList is bound, so a change in the
 // palette repaints the bar without any process or poll. Text items are
 // hidden on a vertical bar, like Omarchy's own text widgets.
 BarWidget {
   id: root
-  moduleName: "evindor.keystroke"
+  moduleName: "nixarchy.menu"
 
-  readonly property var keystroke: {
+  readonly property var menu: {
     var shell = root.bar ? root.bar.shell : null
     var loaders = shell && shell.panelLoaders ? shell.panelLoaders : null
     var loader = loaders ? loaders[root.moduleName] : null
     return loader && loader.item ? loader.item : null
   }
-  readonly property var items: root.keystroke && root.keystroke.barList ? root.keystroke.barList : []
+  readonly property var items: root.menu && root.menu.barList ? root.menu.barList : []
 
   implicitWidth: layout.implicitWidth
   implicitHeight: layout.implicitHeight

@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-transfer-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-transfer-') as temp:
     work = Path(temp)
     helper = work / 'helper.py'
     helper.write_text('''import pathlib, sys, time

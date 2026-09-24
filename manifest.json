@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
-  "id": "evindor.keystroke",
-  "name": "Keystroke",
+  "id": "nixarchy.menu",
+  "name": "nixarchy-menu",
   "version": "1.4.4",
-  "author": "Arseniy Zarechnev",
+  "author": "olafkfreund",
   "license": "MIT",
-  "description": "A Raycast-style command palette that replaces the Omarchy menu, with voice, Codex and community extensions",
-  "homepage": "https://github.com/evindor/keystroke",
+  "description": "A Raycast-style command palette that replaces the Omarchy menu on nixarchy, with voice, Codex and community extensions",
+  "homepage": "https://github.com/olafkfreund/nixarchy-menu",
   "kinds": [
     "menu",
     "bar-widget"
   ],
   "keepLoaded": true,
   "entryPoints": {
-    "menu": "Keystroke.qml",
+    "menu": "NixarchyMenu.qml",
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Keystroke",
-    "description": "Opens the Keystroke command palette",
+    "displayName": "nixarchy-menu",
+    "description": "Opens the nixarchy-menu command palette",
     "category": "Compositor",
     "allowMultiple": false,
     "defaultSection": "left"
