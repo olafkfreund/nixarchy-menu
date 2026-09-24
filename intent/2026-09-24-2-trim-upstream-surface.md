@@ -1,5 +1,5 @@
 ---
-status: approved
+status: draft
 issue: 2
 author: olafkfreund
 epic: 6
@@ -17,13 +17,6 @@ part of the menu that nixarchy will run, but every piece has to be renamed
 - `experiments/`: Codex cloud experiments.
 - `docs/releases/`, `docs/history/`: upstream release notes and design history.
 - `preview.png`, `assets/` screenshots, `tools/showcase/`.
-- **Smart Match**:
-  - `matching/`, including a committed static x86_64 binary.
-  - `helpers/matching-start.py`, `helpers/matching-worker.py`, and the
-    matching-engine CI workflow.
-  - Runtime `cargo` build and `uv` install fallbacks, plus a model download
-    on first query (`helpers/matching-start.py:83-180`).
-  - None of this can run from the Nix store.
 - **Upstream extension marketplace feed**: `providers.extensions.indexUrl`
   points at `evindor/keystroke` (`keystroke.example.json:82`). That is
   unreviewed third-party QML loaded into our shell.
@@ -36,8 +29,9 @@ part of the menu that nixarchy will run, but every piece has to be renamed
 
 - The tree contains only what the menu runs, plus developer docs
   (`docs/architecture.md`, `docs/providers.md`).
-- Search is the existing fuzzy matcher (`core/Match.js`), and no binary or
-  model is shipped or fetched at runtime.
+- **Smart Match stays** (amended 2026-09-24, see below). Its impure
+  install (prebuilt binary, runtime cargo/uv, model download) is replaced by
+  Nix packaging in #3, not by deletion.
 - No extension or index is ever fetched from upstream. The bundled
   extensions in `extensions/` stay and remain off by default.
 - Menu rows, guards and ✓ marks come from the shell's `MenuModel.js`, so
@@ -50,9 +44,7 @@ part of the menu that nixarchy will run, but every piece has to be renamed
 ## Affected users and systems
 
 - Only this repo. Nothing in nixarchy consumes it yet (wiring is #3).
-- Users of the current fork: Smart Match settings disappear from Settings →
-  Matching.
-- CI: `.github/workflows/` loses the matching-engine job.
+- CI: `.github/workflows/` loses the Pages job.
 
 ## Constraints
 
@@ -62,9 +54,7 @@ part of the menu that nixarchy will run, but every piece has to be renamed
 - Must keep `LICENSE` and upstream attribution.
 - The existing tests that remain must still pass. Tests for deleted code go
   with it.
-- A deleted piece can be brought back from git history. Semantic matching
-  via nixarchy Local AI (Ollama) is a separate follow-up issue, only if it
-  is missed.
+- A deleted piece can be brought back from git history.
 
 ## Open questions
 
@@ -77,3 +67,21 @@ part of the menu that nixarchy will run, but every piece has to be renamed
 3. The voice bind writer (`core/VoiceBindings.js`) may conflict with the
    binds that nixarchy seeds in `bindings.lua`. Is that in scope here, or
    does it get its own issue? Proposed: its own issue.
+
+## Amendment (2026-09-24, after implementation review)
+
+The first approved version deleted Smart Match. Testing on razer showed that
+this loses more than embeddings: typed spoken-style arithmetic ("27 plus
+90"), the Chromium stand-in for "Chrome", de-duplication across providers
+and cross-catalog typo recovery. The cost that motivated deletion was only
+the *install path*:
+- a prebuilt binary
+- runtime cargo/uv
+- a model download
+
+Nix can package all of it:
+- **Engine:** a 4-crate Rust program with `Cargo.lock`.
+- **Model:** three files, SHA-256 already pinned.
+
+So Smart Match is kept in #2 as it is today, and #3 packages it
+declaratively and deletes the impure install chain.

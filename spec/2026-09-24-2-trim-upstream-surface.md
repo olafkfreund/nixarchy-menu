@@ -1,64 +1,72 @@
 ---
-status: approved
+status: draft
 issue: 2
 intent: intent/2026-09-24-2-trim-upstream-surface.md
+amends: approved version at b433b08
 ---
 
 # Spec: Remove upstream surface nixarchy does not need
 
 ## Design
 
-Pure deletion plus the edits that keep the remaining code consistent. Nothing
-is renamed (#1), `codex/` is untouched (#4), and hardcoded `/usr` paths are
-left for packaging (#3).
+Pure deletion, plus the edits that keep the remaining code consistent.
+Nothing is renamed (#1). `codex/` is untouched (#4). Hardcoded `/usr`
+paths are left for packaging (#3).
 
-### 1. Smart Match → the existing "off" path
+### 1. Smart Match: kept, and packaged by Nix in #3 (amended)
 
-`core/SmartMatch.js` is more than embeddings. It also does:
-- a lexical pass across every provider's rows (typo recovery)
-- install/remove/on/off intent filters
-- the Chromium stand-in for "Chrome"
-- removal of duplicate rows that run the same command
-- spoken arithmetic
+The approved version deleted Smart Match. That removal turned out to take
+away more than embeddings, and the cost that motivated it was only the
+impure install path, which Nix removes cleanly. Smart Match therefore stays
+in #2 exactly as it is today: code, settings, helpers, prebuilt engine,
+tests, CI attestation and docs.
 
-The palette already has a tested `matching.mode: "off"` path that skips all
-of this. Every provider already searches its own full tree, and voice text
-still goes through `Intent.normalize`. Spoken maths keeps working, because
-`Calc.calculate(Intent.normalize(text))` is enough (`tests/tst_smartmatch.qml:27`).
-The design makes the "off" path the only path.
+What #2 has to put back, because all three teams' commits removed Smart
+Match pieces:
 
-Delete these files:
-- `matching/` (engine source, prebuilt binary, `Session.qml`, descriptions)
-- `helpers/matching-start.py`, `helpers/matching-worker.py`, `core/SmartMatch.js`
+- **Commit A (`604f2b1`):** revert it in full. That restores:
+  - `core/SmartMatch.js`
+  - `matching/` (engine source, prebuilt binary, `Session.qml`, descriptions)
+  - `helpers/matching-*.py`
+  - the Smart Match paths in `Keystroke.qml`
+  - the Matching settings screen and `SettingsTree.catalog()`
+  - the providers' `catalog()` functions (Applications, Hotkeys, SettingsProvider)
+  - `Intent.js` as it was
+  - the Smart Match tests, and `tst_match.qml` as it was
+- **Commit B (`8c6c9db`), partially:**
+  - Restore `OmarchyMenu.catalog()` and `catalogVisible()`, and
+    `tests/catalog_check.py`.
+  - The MenuModel switch (§3) stays.
+- **Commit C (`5561061`), partially.** Restore:
+  - every matching part of `bin/keystroke`:
+    - the `matching` and `engine` usage lines and cases
+    - the install step
+    - the `matching/engine/target` exclude
+    - the four matching test lines
+  - `.gitignore`'s `matching/engine/target/` entry
+  - the example config's `matching` block
+  - `.github/workflows/engine.yml` and `docs/engine-provenance.md`. The
+    prebuilt binary stays shipped until #3, and a shipped binary keeps its
+    reproducibility check.
+  - the Smart Match text in the docs:
+    - README install paragraph and `## Smart Match` section
+    - `docs/architecture.md` Smart Match and catalog sections
+    - `docs/providers.md` "Optional Smart Match catalog" section and the
+      `requery({catalog})` wording
+    - `CONTRIBUTING.md`'s `matching-start.py` mention
+  - Deleted docs links that those sections contain are dropped, not restored.
 
-Edit `Keystroke.qml`:
-- Remove the `SmartMatch`/`Matching` imports (:18, :21).
-- Remove the matching schema, settings, stamp and session, and the two
-  description FileViews (:126-161).
-- Remove the prewarm timer, `catalogFor()` and `documentsFor()` (:749-812).
-  Keep `invalidateCatalog()` as a call to `invalidateProviders()`, because
-  it has three callers (:689, :731, :758).
-- Remove every `matchingSession.cancelRequest()` (:90, :671, :707, :858, :862).
-- In the query path, remove the `SmartMatch.request/merge` branch
-  (:823-828, :850-862). `Match.rank(collected)` at :864 is already the
-  fuzzy path. Simplify pending/error to not reference the session (:866-867).
-- Remove the `row.smartMatch` re-query (:1111-1116), the `matching-retry`
-  perform (:1145) and the `matching` key in `inspect()` (:1211).
-
-Edit the other files:
-- `core/SettingsTree.js:116-125`: remove the Matching screen.
-- `providers/SettingsProvider.qml:38,45`: drop `matchingModel()` and
-  `matchingStamp`.
-- `core/Intent.js`: delete `arithmetic()`, which is dead once SmartMatch is
-  gone. `normalize()` stays.
-- The bundled providers' `catalog()` functions (Applications, Hotkeys,
-  OmarchyMenu, SettingsProvider) feed only Smart Match, so they are deleted.
-  `requery({catalog: …})` still accepts the option and ignores it, so
-  existing extensions keep working.
-- `keystroke.example.json:15-18`: delete the `matching` block.
-- `providers/Registry.qml:46` and `tools/check_extensions.py:25`: keep
-  `"matching"` as a reserved id. Old configs may still have the key, and
-  `core/Settings.js` preserves unknown fields.
+**What #3 then does**, added to #3's intent when it is written:
+- Build `matching/engine` with `rustPlatform.buildRustPackage` from its
+  `Cargo.lock`.
+- Fetch the model's three files (`minishlab/potion-base-2M` at revision
+  `389b9f6`, and optionally 8M) with `fetchurl`, using the SHA-256 digests
+  already pinned in `helpers/matching-start.py`.
+- Have `matching/Session.qml` start the engine directly with the store
+  model directory.
+- Delete the prebuilt binary, `build-prebuilt.sh`, the download/cargo/uv
+  chain, the Python worker and its lockfile, and `engine.yml`. Nix builds
+  from source, so reproducibility is structural.
 
 ### 2. Marketplace feed
 
@@ -66,8 +74,8 @@ No code reads `marketplace`, `autoCheck` or `indexUrl`, and
 `extensions/index.json` does not exist. Delete the three keys from
 `keystroke.example.json:80-82` and keep `"enabled": true`. Bundled
 `extensions/` are unaffected. The upstream links in `core/Extensions.js:22-23`
-and `core/SettingsTree.js:18` (GUIDE_URL) still resolve, so they are
-repointed in #1 together with the name.
+and `core/SettingsTree.js:18` (GUIDE_URL) still resolve, and are repointed
+in #1 together with the name.
 
 ### 3. Vendored MenuModel → the shell's copy
 
@@ -81,119 +89,101 @@ exist with the same signatures.
   `import "file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js" as MenuModel`.
   A QML import cannot read `$OMARCHY_PATH`, and the store path changes on
   every update. Menu *data* is still read from `$OMARCHY_PATH`
-  (`OmarchyMenu.qml:14-16`), as Nixi does.
+  (`OmarchyMenu.qml:14-16`), as Nixi does. Since nixarchy#220, that data is
+  the full menu with nixarchy's overrides already merged.
 - `tests/tst_menumodel.qml:3` gets the same URL.
-- Delete `omarchy/MenuModel.js`, and remove it from `omarchy/LICENSE` (or
-  delete that file if nothing else is vendored).
-- There is no behaviour change, since the logic is identical. The ✓ marks
-  stay absent, because the provider never calls `labelFor`; adding them is
-  out of scope.
+- Delete `omarchy/MenuModel.js`. `omarchy/` held nothing else and there is
+  no `omarchy/LICENSE`. Attribution moves to the root README License line.
+- There is no behaviour change, since the logic is identical.
 
 ### 4. Files and CI removed outright
 
 - `site/`, `experiments/`, `tools/showcase/`, `tools/profile_palette.py`
 - Root `assets/` (`keystroke.svg` plus 14 screenshots, nothing references
   them) and `preview.png`
-- `docs/releases/`, `docs/history/`, `docs/verification.md`,
-  `docs/engine-provenance.md`
-- `.github/workflows/engine.yml` and `.github/workflows/pages.yml`.
-  `extensions.yml` stays.
-- `.gitignore:2` (`matching/engine/target/`)
+- `docs/releases/`, `docs/history/`, `docs/verification.md`
+- `.github/workflows/pages.yml`. `engine.yml` and `extensions.yml` stay.
 
 ### 5. Tests
 
-- Delete `tests/tst_smartmatch.qml`, `tests/matching_session_check.py`,
-  `tests/matching_worker_check.py`, `tests/matching_engine_check.py`,
-  `tests/palette_matching_check.py` and `tests/catalog_check.py` (it tests
-  the deleted `OmarchyMenu.catalog()`).
-- `tests/tst_match.qml`: drop the `Smart` import (:6) and the
-  `Smart.merge/request` lines in `test_query_learning…` (:98-99). The rest
-  of the case still asserts the behaviour.
-- The leftover `matching:{mode:"off"}` and `"experiments"` ignore entries in
-  palette checks are no-ops, so they stay. This keeps the diff small.
+- No test is deleted except the ones for files removed in §4, and there are
+  none.
+- `tests/catalog_check.py` and the Smart Match tests stay, because the code
+  they test stays.
+- `tests/tst_menumodel.qml` switches its import (§3).
 
 ### 6. Tooling and docs
 
-- `bin/keystroke`:
-  - Remove the `matching` and `engine` usage lines and cases (:23-24, :72-73).
-  - Remove the install step that calls `matching-start.py` (:44-46).
-  - Remove the `matching/engine/target` exclude (:36).
-  - Remove the four matching test lines (:79-80, :85-86).
+- `bin/keystroke`: no change. Every edit the first version made there was
+  Smart Match.
 - `README.md`:
-  - Delete the release link (:9), the showcase line (:11), the Smart Match
-    install paragraph (:23-31) and the `## Smart Match` section (:64-84).
-  - Delete the `site/assets` images (:5, :41-46, :90, :104, :130, :136).
-  - Reword the `verification.md` link (:147).
-  - The full rewrite is #1.
-- `CONTRIBUTING.md:51,146`: drop the "record in docs/verification.md" advice.
-- `docs/architecture.md`: delete the Smart Match and catalog sections
-  (:114-14x) and "and semantic" (:60).
-- `docs/providers.md`:
-  - Delete "Optional Smart Match catalog" (:186-).
-  - Note that `requery({catalog})` is accepted and ignored (:53).
+  - Delete the release link (:9), the showcase line (:11), the `site/assets`
+    images and screenshot table, and links to deleted files.
+  - The Smart Match paragraph and section stay.
+  - The License line names the shell's `MenuModel.js`.
+- `CONTRIBUTING.md`:
+  - Drop the "record in docs/verification.md" advice.
+  - Replace the vendored-MenuModel row and bullet with the shell import.
+- `docs/architecture.md`: replace the MenuModel file-tree line and the
+  "vendored" wording with the shell import. The Smart Match sections stay.
 - `docs/codex-integration-verification.md:66,94`: unlink `experiments/`.
   The file itself goes with #4.
 
 ## Alternatives rejected
 
-- **Keep SmartMatch.js's lexical half** (request/merge without embeddings).
-  It is 1 file and more tests kept for typo recovery that fuzzy match mostly
-  covers already. If it is missed, nixarchy Local AI (Ollama) embeddings are
-  the follow-up, and that would replace this code anyway.
+- **Delete Smart Match (the first approved version).** It loses:
+  - typed "27 plus 90"
+  - the Chromium stand-in
+  - de-duplication across providers
+  - cross-catalog typo recovery
+  - semantic matching
+
+  It saved nothing Nix packaging does not also remove.
+- **Semantic matching through nixarchy Local AI (Ollama).** It only works
+  with `localAi.enable`, which is off by default. It is slower, and it is
+  new code.
+- **Keep only SmartMatch.js's lexical half.** It recovers most behaviour but
+  not semantic matching, for about the same effort as packaging the whole
+  thing.
 - **Keep the vendored MenuModel and refresh its header.** It is a second
-  copy that will drift from the shell nixarchy builds; Nixi already proved
-  the import works.
-- **Import MenuModel through `qs.plugins.menu`.** Quickshell's generated
-  module lists `.qml` types, so it probably does not expose the `.js` file.
-  This is unverified, and the file URL is proven.
+  copy that drifts from the shell nixarchy builds.
+- **Import MenuModel through `qs.plugins.menu`.** This is unverified, and
+  the file URL is proven.
 - **Fix the `/usr/lib/qt6` and `/usr/share/omarchy` test paths here.** That
-  is packaging (#3). Mixing it in would turn a pure-deletion diff into a
-  refactor.
+  is packaging (#3).
 
 ## Risks
 
-- **Lost behaviour, accepted by design:**
-  - "launch Chrome" no longer offers Chromium.
-  - Rows from different providers that run the same command are no longer
-    deduplicated.
-  - Typo recovery across the whole catalogue is weaker. Each provider's own
-    fuzzy search still recovers typos in its own rows.
+- **Smart Match stays as broken on nixarchy as it is today until #3.** On
+  razer the helper reports "Matching helper stopped", with no python3/uv or
+  model. This is not a regression, and #3 fixes it.
 - **MenuModel path:**
-  - `file:///run/current-system/sw/...` exists only on NixOS with Omarchy in
-    `systemPackages`, and not inside a Nix build sandbox. That is acceptable
-    for a nixarchy-only plugin.
-  - The sandboxed test run is solved in #3, by substituting the store path
-    at build time.
-  - If the shell's MenuModel API changes on an Omarchy update, the menu
-    breaks at runtime instead of drifting silently. That is the point, but
-    it needs the #3 CI to catch it.
-- **User config:** an existing `keystroke.json` with a `matching` block keeps
-  loading, because unknown fields are preserved and the id stays reserved.
-- **Leftover user state:** a user's already-downloaded model and venv under
-  `~/.local/share/keystroke/matching` are left in place. #1's migration can
-  skip copying them.
-- **No CI coverage:** after this, no CI job runs `tests/`, only the
-  extensions check. #3 adds `nix flake check`.
+  - `file:///run/current-system/sw/...` exists only on NixOS, and not inside
+    a Nix build sandbox. #3 substitutes the store path for sandboxed tests.
+  - An incompatible change to the shell's MenuModel breaks the menu at
+    runtime instead of drifting silently. #3's CI catches it.
+- **No CI coverage for `tests/`:** after this, only `extensions.yml` and
+  `engine.yml` run. #3 adds `nix flake check`.
 
 ## Verification
 
 1. **QML unit suite** on this NixOS host, from `tests/`:
    `nix shell nixpkgs#qt6.qtdeclarative nixpkgs#qt6.qtbase -c env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner -silent -input .`
-   Baseline before the change is 265 passed, 0 failed. After the change,
-   everything passes; the count drops only by `tst_smartmatch`'s cases.
-2. **qmllint** from the same package over every `.qml` file, with
-   `-I $OMARCHY_PATH/shell` via the `qs` shim: no new warnings compared with
-   the baseline.
-3. **No dangling references:**
-   `rg -n 'SmartMatch|matchingSession|matching-start|matching-worker|keystroke-matching|omarchy/MenuModel|site/assets|docs/releases|verification\.md|engine-provenance|indexUrl|profile_palette|showcase'`
-   returns nothing outside `intent/`, `spec/` and `plan/`.
-4. **Runtime**, installed as the menu on this machine:
-   - `Super+Space` opens the palette.
-   - `sysshut` finds System › Shutdown, and `ffx` finds Firefox.
-   - `2m in feet` answers.
-   - Settings has no Matching screen.
-   - Voice: `Super+Space` twice with "27 plus 90" gives 117.
-   - Every nixarchy menu row, including the Ask group, matches the stock menu.
-5. **Deferred to #3:** the Python quickshell checks (`tests/*_check.py`).
-   They hardcode `/usr/share/omarchy`, so they cannot run on NixOS before
-   #3. This is stated as a gap, not claimed as passing.
+   Expected: **265 passed, 0 failed**, the same as the baseline before #2.
+2. **qmllint** from the same package over every `.qml` file, with the `qs`
+   shim: no new warnings compared with the baseline (484 lines).
+3. **Smart Match is intact:** `git diff 6a99b6c -- core/SmartMatch.js matching helpers Keystroke.qml core/SettingsTree.js core/Intent.js providers/Applications.qml providers/Hotkeys.qml providers/SettingsProvider.qml tests bin/keystroke .gitignore .github/workflows/engine.yml docs/engine-provenance.md`
+   shows only the §3 MenuModel import changes (in `tests/tst_menumodel.qml`).
+4. **No dangling references:**
+   `rg -n 'omarchy/MenuModel|site/assets|docs/releases|verification\.md|indexUrl|profile_palette|tools/showcase' -g '!intent/**' -g '!spec/**' -g '!plan/**'`
+   returns nothing except the `codex-integration-verification.md` filename,
+   which goes with #4.
+5. **Runtime on razer**, installed as the menu:
+   - `sysshut`, `ffx`, `2m in feet` and the `ask` rows behave as in the
+     first run.
+   - Settings has a Matching screen again.
+   - Voice: "27 plus 90" gives 117.
+   - Typed "27 plus 90" is expected to work only when the matching helper
+     can start. On razer today it cannot, so this is recorded rather than
+     claimed.
+6. **Deferred to #3:** the Python quickshell checks (`tests/*_check.py`).
