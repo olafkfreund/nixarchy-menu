@@ -173,3 +173,15 @@ and `tests/tst_settingstree.qml`.
   - Shell restarts at 17:19–17:24, from another session rebuilding razer (system generations 2950–2952 at 17:13–17:21, and a Home Manager activation at 17:22).
 - **Test lesson:** once Smart Match loads, 21 fuzzy rows come before the hand-off rows. Look rows up by title for `activateAt`, never by a fixed index.
 - **Still to do** once razer is quiet: the confirm sheet, the launch argv, no agent, not installed, and `?` with Ask Nixi.
+
+### Razer (R3), completed at 17:34–17:44
+Setup: generation 2952, a fresh shell (PID 1756972, stable throughout), default agent `claude`. Palette steps were driven by shell IPC (`summon`, `inspect`, `activateAt` with the row looked up by title) and `wtype -k Return`.
+- **Confirm sheet:** activating "Ask Claude Code" shows "Ask Claude Code?", the typed text, "Claude Code starts with automatic approval and can run commands without asking." and "↵ Open Claude Code / esc Cancel". Nothing launches before Enter.
+- **Launch:** Enter gives `foot --app-id=org.omarchy.agent -e claude --permission-mode auto -- 'reply with ok; keep "quotes" and $(id) literal'`, with quotes and `$(id)` passed literally and the window class `org.omarchy.agent`.
+- **No default agent:** the row "Choose a default agent" opens `omarchy/setup.default.agent` (Claude, Antigravity, Codex, …).
+- **Agent not installed** (`crush`): the row "Crush is not installed" opens the same picker, and nothing is launched.
+- **Presence check caveat:** razer's `~/go/bin/gemini` is on PATH but cannot execute, so `command -v gemini` succeeds. The row shows "Ask Gemini CLI", the same result `omarchy-agent`'s own check gives. It is not a bug in this PR.
+- **`?` prefix:** `? how do I add a printer` puts Ask Nixi first.
+- **Ask Nixi fallback** (razer's nixi predates `--ask`): the clipboard holds "how do I add a printer", and Nixi opens.
+- **Restored:** default agent `claude`, the palette and Nixi closed, the test agent killed. The #4 build stays installed.
+- **Test-harness lesson:** `pgrep`/`pkill -f` with a pattern from the ssh command line matches that command itself. Run such steps from a script file on the host, and kill by PID.
