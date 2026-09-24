@@ -262,3 +262,25 @@ and `.github/PULL_REQUEST_TEMPLATE.md`.
   - `CodexSession.saveRecent` writes only when `historyFile.path` is set.
 - **What happens after a failed copy:** the palette runs on defaults for that session, saves nothing, sends the existing notice, and the next start retries.
 - **Result:** QML 266/266; qmllint 0 new warnings.
+
+### Razer fix: install order
+- **Found on razer:** `bin/nixarchy-menu install` ran the Smart Match prep (`matching-start.py --install-only`, which now targets `…/nixarchy-menu/matching`) **before** any migration. It downloaded the model again, and the later migration then skipped `models/` because the destination existed. No data was lost, since the model is pinned and byte-identical, but it was a needless 7.9 MB download.
+- **Fix:** `install` runs `helpers/migrate-state.sh` first. The script is idempotent. Declarative installs (#3) were unaffected: at plugin start the migration already runs before matching, which is gated on `stateReady`.
+- **Verified on razer:** the new model files keep the old files' mtime (2026-09-16) and are byte-identical, so they were copied, not downloaded.
+
+### Razer results (8aab506 + install-order fix)
+- The starting state was a Keystroke user: `evindor.keystroke` enabled, holding the restore flag, with its bar entry.
+- `install` disabled it first, then enabled `nixarchy.menu`:
+  - `nixarchy.menu` enabled; `omarchy.menu` and `evindor.keystroke` disabled
+  - `cloneSourceRestores` is `["nixarchy.menu"]`
+  - the bar entry is `nixarchy.menu` only, in the old slot
+  - `intent/`, `spec/` and `plan/` are not copied into the plugin
+- Migration:
+  - `nixarchy-menu.json` is a byte-identical copy (`providers.ai=claude`)
+  - `usage.json` is identical
+  - the old config, state and share are unchanged against the backup
+- Palette:
+  - typed "27 plus 90" gives 117
+  - Smart Match is Ready, and "launch chrome" offers Chromium
+  - `nixsepro` finds "Preferred assistant", and "Learn nixarchy-menu" is present
+  - no config error, no provider problems, and no nixarchy-menu errors in the journal

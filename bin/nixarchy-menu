@@ -41,6 +41,9 @@ sync_copy() {
 case "${1:-help}" in
   install)
     omarchy plugin validate "$ROOT"
+    # Copy Keystroke's state (including its Smart Match model) first, so the
+    # model below is reused instead of downloaded again. Safe to repeat.
+    sh "$ROOT/helpers/migrate-state.sh" || echo "Some Keystroke data was not copied; it is retried when the menu starts." >&2
     if ! python3 "$ROOT/helpers/matching-start.py" --model small --install-only; then
       echo "Smart Match setup did not finish. Ordinary search remains available; retry in nixarchy-menu Settings." >&2
     fi
