@@ -199,3 +199,11 @@ Owns:
 - Razer: `bin/nixarchy-menu uninstall`, or
   `omarchy plugin disable nixarchy.menu`, which restores the stock menu.
   Old Keystroke data is never touched.
+
+## Deviations during implementation
+
+### K: smartmatch
+- **Installed plugin permissions:** `bin/nixarchy-menu install` sets `chmod 755` on the stage dir, because `mktemp -d` creates it as 0700 and the old rsync produced 755.
+- **Engine test coverage:** `matching_engine_check.py` also covers the startup exit codes (2 for bad arguments, 1 for an unloadable model) and one real-model ranking query.
+- **Parity must not skip:** `nix shell nixpkgs#python3Packages.tokenizers` does not make `tokenizers` importable, and parity would then SKIP silently. The engine check and the devShell use `python3.withPackages (p: [p.tokenizers])`, and the engine check fails on any `SKIP`.
+- **Leftover reference:** `matching/engine/src/main.rs:9` still mentions `matching-worker.py` in a doc comment. It is left unchanged because the engine tree stays byte-identical.

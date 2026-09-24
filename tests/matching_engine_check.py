@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
-"""Compiled engine: builds from source, speaks the worker protocol, and tokenizes
-exactly like Hugging Face `tokenizers` on a synthetic WordPiece model (the real
-POTION model is also compared when it is installed locally)."""
+"""Compiled engine: speaks the worker protocol, reports bad arguments and a
+missing model, and tokenizes exactly like Hugging Face `tokenizers` on a
+synthetic WordPiece model and on the real POTION model Nix ships.
+
+Usage: matching_engine_check.py --engine PATH --model-dir DIR
+(`nix build .#matching-engine .#model-small` provides both)."""
+import argparse
 import json
-import os
 from pathlib import Path
-import shutil
 import struct
 import subprocess
-import sys
 import tempfile
 
-from tokenizers import Tokenizer
+try:
+    from tokenizers import Tokenizer
+except ImportError:
+    Tokenizer = None
 
 root = Path(__file__).resolve().parents[1]
-engine_src = root / 'matching/engine'
 tricky = ["Hello World!", "Übermäßig café naïve", "野口里佳 Noguchi", "don't stop-me_now  x", "\x00weird�\tchars", "a" * 120, "emoji 😀 test",
           "ǅ İstanbul ﬁle", "", "   ", "open the browser", "Volume up!!", "screen-shot (region)", "SUPER+SHIFT+Q", "Straße", "ΣΊΣΥΦΟΣ", "①②③ 𝔘𝔫𝔦𝔠𝔬𝔡𝔢",
           "​zero​width", "tab\tsep\nnl\rcr", "café́ combining", "ｆｕｌｌｗｉｄｔｈ", "русский текст", "日本語のテキスト", "🇺🇸 flags 👨‍👩‍👧", "a·b•c", "path/to/file.txt", "50% of 80"]
-
-
-def build(target):
-    subprocess.run(['cargo', 'build', '--release', '--locked', '--quiet', '--manifest-path', str(engine_src / 'Cargo.toml'), '--target-dir', str(target)], check=True)
-    return target / 'release' / 'keystroke-matching'
 
 
 def synthetic_model(directory):
@@ -53,6 +51,9 @@ def tokenize_with(binary, model_dir, texts):
 
 
 def parity(binary, model_dir, texts, label):
+    if Tokenizer is None:
+        print('SKIP tokenizer parity (%s): python tokenizers is not installed' % label)
+        return
     hf = Tokenizer.from_file(str(model_dir / 'tokenizer.json'))
     unk = hf.token_to_id('[UNK]')
     expected = [[i for i in hf.encode(t, add_special_tokens=False).ids if i != unk] for t in texts]
@@ -62,9 +63,14 @@ def parity(binary, model_dir, texts, label):
     print('ok tokenizer parity (%s): %d texts' % (label, len(texts)))
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--engine', required=True, help='the keystroke-matching binary')
+parser.add_argument('--model-dir', type=Path, required=True, help='a real POTION model directory')
+args = parser.parse_args()
+binary = args.engine
+
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-engine-') as temp:
     work = Path(temp)
-    binary = build(work / 'target')
     model = work / 'model'
     model.mkdir()
     synthetic_model(model)
@@ -92,26 +98,21 @@ with tempfile.TemporaryDirectory(prefix='nixarchy-menu-engine-') as temp:
     assert proc.wait(timeout=5) == 0
     print('ok protocol: ready, results, catalog replacement, bounded input, IDs-only output')
 
-    # The shipped binary must be current (built from this source) and must run.
-    shipped = root / 'matching/bin/keystroke-matching'
-    manifest = json.loads(shipped.with_suffix('.json').read_text())
-    fingerprint = subprocess.run([sys.executable, str(root / 'helpers/matching-start.py'), '--engine-fingerprint'], capture_output=True, text=True, check=True).stdout.strip()
-    assert manifest['source'] == fingerprint, 'matching/bin/keystroke-matching is stale: run bin/nixarchy-menu engine'
-    import hashlib
-    assert manifest['sha256'] == hashlib.sha256(shipped.read_bytes()).hexdigest(), 'shipped engine does not match its manifest'
-    assert manifest['target'] == 'x86_64-unknown-linux-musl', 'shipped engine must be the static musl build'
-    assert manifest['image'].startswith('docker.io/library/rust:') and '@sha256:' in manifest['image'], 'shipped engine must name its digest-pinned build image'
-    if manifest['machine'] == os.uname().machine:
-        parity(shipped, model, corpus, 'shipped binary')
-    else:
-        print('skip: shipped engine is for', manifest['machine'])
+    # Bad arguments exit 2; a model that cannot load exits 1. Both say why.
+    for argv, code in [(['--bogus'], 2), ([], 2), (['--model-dir', str(work / 'missing')], 1)]:
+        run = subprocess.run([binary] + argv, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=10)
+        assert run.returncode == code and json.loads(run.stdout.splitlines()[-1])['type'] == 'error', (argv, run)
+    print('ok startup errors: bad arguments exit 2, unloadable model exits 1')
 
-    installed = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'nixarchy-menu/matching/models/small'
-    snapshots = sorted(installed.glob('*/tokenizer.json')) if installed.is_dir() else []
-    if snapshots:
-        real = snapshots[-1].parent
-        descriptions = list(json.load(open(root / 'matching/descriptions.json')).values())
-        parity(binary, real, tricky + descriptions, 'installed small model')
-    else:
-        print('skip: no installed small model for real-vocabulary parity')
-print('PASS matching engine: build, protocol and tokenizer parity')
+    # The real model: it loads, answers, and tokenizes like Hugging Face.
+    real = args.model_dir
+    proc = subprocess.Popen([binary, '--model-dir', str(real), '--model', 'small'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+    assert json.loads(proc.stdout.readline())['type'] == 'ready'
+    reply = ask({'id': 1, 'rows': rows, 'query': 'capture the screen'})
+    assert reply['type'] == 'result' and reply['matches'][0]['id'] == 'screen', reply
+    proc.stdin.close()
+    assert proc.wait(timeout=5) == 0
+    print('ok real model: ready and ranks a paraphrase')
+    descriptions = list(json.load(open(root / 'matching/descriptions.json')).values())
+    parity(binary, real, tricky + descriptions, 'real small model')
+print('PASS matching engine: protocol, startup errors and tokenizer parity')

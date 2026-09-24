@@ -120,7 +120,7 @@ function build(model) {
     schemaNodes(nodes, screens, ["matching"], model.matching.schemas, model.matching.values, "settings/matching", matching, "matching")
     nodes.push(node("settings/matching", matching.concat([model.matching.error ? "Retry Smart Match" : model.matching.status || "Model unloaded"]), {
       id: "matching/status", order: 10, listOnly: true, disabled: !model.matching.error,
-      subtitle: model.matching.error || "Models are downloaded once and matched locally", verb: model.matching.error ? "Retry" : "",
+      subtitle: model.matching.error || "The model ships with nixarchy-menu; matching runs locally", verb: model.matching.error ? "Retry" : "",
       action: model.matching.error ? { type: "matching-retry" } : { type: "noop" } }))
   }
   nodes.push(node("settings", rootParts.concat(["Open config file"]), { id: "config", subtitle: String(model.configPath || ""), icon: "", section: "nixarchy-menu",
