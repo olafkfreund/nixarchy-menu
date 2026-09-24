@@ -1,5 +1,5 @@
 ---
-status: approved
+status: draft
 issue: 2
 spec: spec/2026-09-24-2-trim-upstream-surface.md
 ---
@@ -193,3 +193,63 @@ Verify: `jq . keystroke.example.json` succeeds, and `bash -n bin/keystroke` succ
 - **`tests/tst_match.qml`:** later code in the case uses `rows`, so it is set to `[video, window, folder]` instead of deleting lines 98-99. The duplicate "embeddings off" `compare` is removed.
 - **`requery(options)`** now calls `invalidateProviders(options && options.provider)`. `requery({provider})` without `catalog:false` used to clear every provider's cached rows, because the catalog was dirty. It now clears only the named provider's cache, which is correct because each cache holds only that provider's rows.
 - **`core/SettingsTree.js`:** `catalog(tree, scope)`, used only by `SettingsProvider.catalog`, is deleted with the Matching screen.
+
+## Amendment: keep Smart Match (spec amended and approved at 34f69df)
+
+The decisions above that delete Smart Match are **superseded**. Smart Match
+stays exactly as it was before #2, and #3 packages it with Nix. Steps A–D
+above are already committed (`5561061` C, `8c6c9db` B, `604f2b1` A). The
+steps below restore every Smart Match piece and keep everything else. The
+lead does them alone: they are sequential and small.
+
+### E: restore Smart Match (lead)
+
+1. `git revert --no-commit 604f2b1`, which undoes all of team A.
+   Then `git checkout HEAD -- plan/` so the deviation notes are kept.
+   → Verify: `git diff --cached --stat` lists only team A's files.
+2. Team B's catalog:
+   - `git checkout 6a99b6c -- tests/catalog_check.py providers/OmarchyMenu.qml`
+   - Re-apply only the MenuModel import in `providers/OmarchyMenu.qml:5` (the `file:///run/current-system/sw/...` URL).
+
+   → Verify: `git diff 6a99b6c -- providers/OmarchyMenu.qml` is exactly that one line.
+3. Team C's matching tooling:
+   - `git checkout 6a99b6c -- bin/keystroke .gitignore .github/workflows/engine.yml docs/engine-provenance.md`
+     (every commit-C change to `bin/keystroke` was matching or `catalog_check`, and both are back)
+   - `keystroke.example.json`: restore the `matching` block and keep the marketplace keys removed.
+
+   → Verify: `jq . keystroke.example.json` succeeds, and `bash -n bin/keystroke` succeeds.
+4. Docs. Restore the Smart Match text and keep commit C's other edits:
+   - `README.md`: the Smart Match install paragraph and the `## Smart Match` section.
+   - `docs/architecture.md`: the Smart Match and catalog sections, and "and semantic".
+   - `docs/providers.md`: the "Optional Smart Match catalog" section, the `requery({catalog})` wording and "Smart Match stays out" in Routing.
+   - `CONTRIBUTING.md`: the `helpers/matching-start.py` mention.
+   - Drop links to deleted files instead of restoring them.
+
+   → Verify: every local `](path)` target exists.
+5. Commit `revert: keep Smart Match; Nix packaging moves to #3 (#2)` together with this plan file.
+
+### Tests (supersede the Tests section above)
+
+1. QML suite from `tests/`, same command as before → **265 passed, 0 failed**.
+2. qmllint, same loop as before → no warning that is not in the 484-line baseline.
+3. `git diff 6a99b6c -- core/SmartMatch.js matching helpers Keystroke.qml core providers tests bin/keystroke .gitignore .github/workflows/engine.yml docs/engine-provenance.md`
+   shows only the MenuModel import changes (`providers/OmarchyMenu.qml`, `tests/tst_menumodel.qml`) and the deleted `omarchy/`.
+4. `rg -n 'omarchy/MenuModel|site/assets|docs/releases|verification\.md|indexUrl|profile_palette|tools/showcase' -g '!intent/**' -g '!spec/**' -g '!plan/**'`
+   → only the `codex-integration-verification.md` filename.
+5. Razer (never p620):
+   - Rsync the tree to `~/dev/nixarchy-menu-test`, run `bin/keystroke install`, and restart the shell (`keepLoaded` keeps old code otherwise).
+   - Through summon and `inspect`:
+     - `sysshut`, `ffx`, `2m in feet` and `ask` behave as in the first run.
+     - `inspect().matching` exists again.
+     - Settings shows Matching.
+   - The user checks voice "27 plus 90" → 117.
+   - Typed "27 plus 90" is recorded, not claimed, because razer's matching helper cannot start before #3.
+6. Afterwards, restore razer from `~/.local/state/nixarchy-menu-test-backup-20260924-105449`:
+   - plugin dir, `shell.json`, `keystroke.json` and state
+   - `omarchy plugin disable evindor.keystroke`, which reactivates the stock menu
+   - restart the shell
+
+   voxtype stays set up, because the user asked for it.
+
+### Rollback
+`git revert` the E commit to return to the Smart-Match-free tree.
