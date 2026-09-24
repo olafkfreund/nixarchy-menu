@@ -65,3 +65,20 @@ spec: spec/2026-09-24-20-install-refuse-managed.md
 ## Rollback
 
 Revert the commit. The installer goes back to overwriting unconditionally.
+
+## Results (2026-09-25)
+
+- **Step 1:** `refuse_if_managed` is called at the top of `install)` and
+  `uninstall)`. shellcheck is clean.
+- **Step 2:** `tests/install_guard_check.py` has 14 assertions, all passing.
+  With the `install)` call removed, "managed install: runs nothing" and "says
+  what manages it" fail (the stub `nix` build is attempted). Restored.
+  - The stub `nix` exits 1, so a pass-through case can never reach
+    `cp -r "/."` from an empty store path.
+- **Step 3:** `nix build .#checks.x86_64-linux.install-guard` passes in the
+  sandbox, and `nix flake check` exits 0. The new file had to be `git add`ed
+  first, because checkSrc is the git tree.
+- **Step 4 (razer, generation 2957, nixarchy-managed):** the branch's
+  installer exits 1 with the message. The link stays
+  `/nix/store/gh2g5346…-nixarchy-menu`, and there is no staging directory.
+  The scratch directory was removed.
