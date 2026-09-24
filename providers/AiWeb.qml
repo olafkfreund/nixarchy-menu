@@ -3,67 +3,115 @@ import Quickshell
 import Quickshell.Io
 import "../core/AiTargets.js" as AiTargets
 
-// Fallbacks for queries nothing else answers. Typing never contacts a
-// provider; every hand-off is an explicit activation that opens the target
-// with the prompt already in its composer (see core/AiTargets.js for the
-// verified links). Targets are detected once at load and re-checked when the
-// desktop entries change; a missing app or CLI falls back to the browser.
+// Fallbacks for queries nothing else answers: ask Nixi, ask the default coding
+// agent (Omarchy's Setup › Default Agent) in a terminal, or search Google.
+// Typing never runs anything: the agent comes from a watched file, whether it
+// is installed from one `command -v` re-run when the agent or the desktop
+// entries change, and Nixi's state from one check per palette open. A leading
+// "?" puts Ask Nixi first.
 Item {
   id: root
   property var host: null
-  property var available: ({})
+  property string agentId: ""
+  property var found: ({ id: "", commands: ({}) })   // what the last check found on PATH, and for which agent
+  property bool recheck: false
+  property string detectFor: ""
+  property bool nixi: false               // Nixi enabled and on PATH
+  property bool nixiAsk: false            // and new enough for `nixi --ask`
 
   readonly property var provider: ({
     apiVersion: 1,
     id: "ai",
-    name: "AI & Web Search",
+    name: "Agents & Web Search",
     icon: "✳",
     color: "#e79c85",
-    description: "Continue any query in Claude, ChatGPT web or Google",
-    settings: [
-      { key: "provider", type: "enum", label: "Preferred assistant", "default": "chatgpt", options: ["chatgpt", "claude"],
-        description: "Listed first among the fallbacks" },
-      { key: "mode", type: "enum", label: "Open conversations in", "default": "desktop", options: ["desktop", "cli", "browser"],
-        description: "Controls Claude; ChatGPT opens in the browser. Codex has its own provider settings." },
-      { key: "autoSend", type: "boolean", label: "Send immediately in the browser", "default": false,
-        description: "ChatGPT only. Claude and the desktop apps always let you review the prompt first" }
-    ],
-    query: function(ctx) { return root.query(ctx) }
+    description: "Continue any query in Nixi, your default coding agent or Google",
+    settings: [],
+    query: function(ctx) { return root.query(ctx) },
+    opened: function() { agentFile.reload(); if (!nixiCheck.running) nixiCheck.running = true }
   })
 
+  function requery() { if (root.host && root.host.opened) root.host.requery({ provider: root.provider.id }) }
+
+  FileView {
+    id: agentFile
+    path: Quickshell.env("HOME") + "/.config/omarchy/defaults/agent"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.agentId = text().split("\n")[0].trim()
+    onLoadFailed: root.agentId = ""
+    onFileChanged: reload()
+  }
+
+  onAgentIdChanged: checkAgent()
+
+  function checkAgent() {
+    if (detect.running) { root.recheck = true; return }
+    var commands = AiTargets.commandsFor(root.agentId)
+    if (!commands.length) return
+    root.detectFor = root.agentId
+    detect.command = ["sh", "-c", "PATH=\"$HOME/.local/share/mise/shims:$PATH\"; for c; do command -v \"$c\" >/dev/null && echo \"$c\"; done", "sh"].concat(commands)
+    detect.running = true
+  }
+
+  // omarchy-agent looks in mise's shims too, so this does the same. It checks
+  // the id and the binary; see AiTargets.commandsFor.
   Process {
     id: detect
-    command: ["bash", "-lc", "for c in claude-desktop chatgpt claude codex; do command -v \"$c\" >/dev/null 2>&1 && echo \"$c\"; done"]
-    running: true
     stdout: StdioCollector {
       onStreamFinished: {
-        var found = ({})
-        var lines = text.split("\n")
-        for (var i = 0; i < lines.length; i++) if (lines[i].trim()) found[lines[i].trim()] = true
-        root.available = found
+        var commands = ({}), lines = text.split("\n")
+        for (var i = 0; i < lines.length; i++) if (lines[i].trim()) commands[lines[i].trim()] = true
+        root.found = { id: root.detectFor, commands: commands }
+        root.requery()
+      }
+    }
+    onRunningChanged: if (!running && root.recheck) { root.recheck = false; root.checkAgent() }
+  }
+
+  // Installing or removing an agent usually changes the desktop entries.
+  Connections {
+    target: DesktopEntries.applications
+    function onValuesChanged() { root.checkAgent() }
+  }
+
+  // An older nixi lists no --ask in the usage line it prints for an unknown
+  // flag (it exits without doing anything); nixi-nixarchy#37 adds it.
+  Process {
+    id: nixiCheck
+    command: ["sh", "-c", "nixarchy-plugin --enabled io.github.olafkfreund.nixi >/dev/null 2>&1 && command -v nixi >/dev/null || exit 0; echo enabled; nixi --nixarchy-menu-probe 2>&1 | grep -q -- --ask && echo ask"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.nixi = text.indexOf("enabled") >= 0
+        root.nixiAsk = text.indexOf("ask") >= 0
+        root.requery()
       }
     }
   }
 
-  // Installing or removing one of the apps changes the desktop entries; that is
-  // the moment to look again instead of forking bash on every open.
-  Connections {
-    target: DesktopEntries.applications
-    function onValuesChanged() { if (!detect.running) detect.running = true }
+  function row(fields, id, icon, tier, score, q) {
+    fields.id = id
+    fields.icon = icon
+    fields.section = "Continue with"
+    fields.tier = tier
+    fields.score = score
+    fields.preview = q
+    fields.previewLabel = "PROMPT"
+    return fields
   }
 
   function query(ctx) {
-    if (ctx.scope || !ctx.query.trim()) return []
-    var q = String(ctx.rawQuery === undefined ? ctx.query : ctx.rawQuery).trim()
-    var rows = [{ id: "google", title: "Search Google", subtitle: q, icon: "󰊭", section: "Continue with", verb: "Search", tier: "fallback", score: 2,
-                  action: { type: "url", url: AiTargets.googleUrl(q) } }]
-    var order = ctx.settings.provider === "claude" ? ["claude", "chatgpt"] : ["chatgpt", "claude"]
-    for (var i = 0; i < order.length; i++) {
-      var p = AiTargets.plan(order[i], order[i] === "chatgpt" ? "browser" : ctx.settings.mode, ctx.settings.autoSend === true, root.available, q)
-      rows.push({ id: p.id, title: p.title, subtitle: p.subtitle, icon: order[i] === "claude" ? "󰛄" : "󰭹", section: "Continue with",
-                  verb: p.verb, tier: "fallback", score: i === 0 ? 3 : 2, action: p.effect,
-                  preview: q, previewLabel: "PROMPT", previewDetail: "Opens with this prompt in the composer" })
-    }
+    if (ctx.scope) return []
+    var raw = String(ctx.rawQuery === undefined ? ctx.query : ctx.rawQuery).trim()
+    var asked = raw.charAt(0) === "?"
+    var q = asked ? raw.slice(1).trim() : raw
+    if (!q) return []
+    var rows = []
+    if (root.nixi) rows.push(row(AiTargets.nixiRow(q, root.nixiAsk), "nixi", "", asked ? "answer" : "fallback", 3.5, q))
+    var installed = root.found.id === root.agentId && AiTargets.isInstalled(root.agentId, root.found.commands)
+    rows.push(row(AiTargets.agentRow(root.agentId, installed, q), "agent", "󰚩", "fallback", 3, q))
+    rows.push({ id: "google", title: "Search Google", subtitle: q, icon: "󰊭", section: "Continue with", verb: "Search", tier: "fallback", score: 2,
+                action: { type: "url", url: AiTargets.googleUrl(q) } })
     return rows
   }
 }

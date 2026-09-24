@@ -137,3 +137,26 @@ and `tests/tst_settingstree.qml`.
 - Revert the P and Q commits. The Codex client comes back from history.
   Users' `codex.json` history was never deleted.
 - Razer: reinstall the previous `nixarchy.menu` build.
+
+## Deviations during implementation
+
+### nixi#37 landed, but nixarchy still pins an older nixi
+- nixi-nixarchy#43 merged (`4e6c1b5`), but nixarchy pins `nixi` at `1e25cb8`, so no machine has `nixi --ask` yet. The pin bump is nixarchy#956.
+- **Change to the plan:** Ask Nixi probes support once per palette open with `nixi --nixarchy-menu-probe 2>&1 | grep -- --ask`. An unknown flag prints nixi's usage line, which lists `--ask` only on new builds.
+- Without `--ask`, the row uses the spec §4 fallback, built from the host's existing `compound` effect, so there is no shell: `copy` the text, then `exec ["nixi"]`, then a "Question copied" `notify`.
+
+### P: remove-codex
+- **`palette_dictation_check`:** it moved to Translate's view, and the harness enables the `translate` extension. Stage 2 also waits for the translate service to load, because extensions load asynchronously.
+- **Extras:** P also cleaned `docs/providers.md:147` (a reference to the deleted Codex files) and removed the ignored `provider`/`mode`/`autoSend` settings from the example config's `ai` block.
+
+### Q: handoff
+- **Installed check mirrors `omarchy-agent`'s gate.** It requires the id **and** the binary on PATH (`commandsFor` / `isInstalled`, nixarchy#949). `omarchy-agent` refuses an agent whose id isn't a command, so antigravity with only `agy` shows "not installed" instead of a launch that fails. The same applies to openclaw.
+- **mise shims:** the check puts mise shims on PATH, as `omarchy-agent` does, and passes the commands as arguments.
+- **Fixtures:** "Preferred assistant" no longer exists, so the `tst_match` and `tst_settingstree` fixtures and the README fuzzy examples use Settings › Files › Search in the main palette (`filmod`, `nixsefimo`, `setfilmo`, `sealit`, `fil mode`, all asserted in tests). Stale comments in `core/SettingsTree.js` and `core/Match.js` were updated.
+- **Found, filed as #13:** Files' `optionLabels` never apply. Files declares an array, and SettingsTree looks labels up by name.
+
+### Results
+- `nix flake check`: all checks passed.
+- Forced `--rebuild` of `quickshell`: 19/19. codex_session was deleted.
+- QML: 264 passed, 0 failed.
+- `git grep -i codex` leaves only the AGENTS id, the README upgrade note, the ignore patterns and `matching/`.
