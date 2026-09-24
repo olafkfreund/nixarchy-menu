@@ -253,3 +253,11 @@ lead does them alone: they are sequential and small.
 
 ### Rollback
 `git revert` the E commit to return to the Smart-Match-free tree.
+
+### E: outcome
+- E1-E4 were done as written. The revert conflicted only in `plan/`, which was resolved to HEAD as planned.
+- One sentence was also dropped from the restored `docs/architecture.md` catalog section. It named the deleted `tools/profile_palette.py`, and step 4 says to drop links to deleted files.
+- Results:
+  - QML: 265 passed, 0 failed.
+  - qmllint: 484 lines, 0 new.
+  - Smart Match code and tests match 6a99b6c apart from the two MenuModel import lines.

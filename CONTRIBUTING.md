@@ -121,7 +121,7 @@ Most extensions need no setup. One that needs a local model, a compiled helper o
 "setup": { "run": "bin/setup", "summary": "Downloads the 40 MB model into ~/.local/share/keystroke/thing, verified by SHA-256" }
 ```
 
-The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest, never `curl | sh`, never `sudo`, write only under `~/.local/share/keystroke/<id>` or `~/.cache/keystroke/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
+The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest (see `helpers/matching-start.py`), never `curl | sh`, never `sudo`, write only under `~/.local/share/keystroke/<id>` or `~/.cache/keystroke/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
 
 ### 4. Test it
 

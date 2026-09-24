@@ -50,7 +50,7 @@ Bundled providers also carry `id`; extensions are keyed by their folder name.
 
 `query` (string), `rawQuery` (full original text before spoken-command normalization), `scope` (`""` at root, or `<key>` / `<key>/<sub>`), `sub`, `generation`, `settings` (validated values for your schema, plus `prefix` when you declare commands), `patterns` (`{ matched: [ids], boost }` for your declared patterns against this query; `{ matched: [], boost: 0 }` when none matched or none are declared), `command` (`{ id, prefix, rest, args }` when the query starts with one of your declared commands, with `rest` the text after the prefix; `null` otherwise, and absent on older hosts), `pending()` (call when more rows will arrive later), `host` (`host.requery()` re-runs the current query; `host.appLibrary`, `host.omarchyPath`, `host.shell`), `shell`, `appLibrary`, `omarchyPath`.
 
-`host.requery(options)` accepts `catalog` (for example `{ catalog: false }`) for compatibility and ignores it, and `provider: "<your id>"` so only your rows are queried again; the other providers' rows for the current query are reused. Calls landing in one event-loop turn run a single query, and none interrupts the typing pause.
+`host.requery(options)` accepts `{ catalog: false }` when only your `query` rows changed (the Smart Match catalog is kept) and `provider: "<your id>"` so only your rows are queried again; the other providers' rows for the current query are reused. Calls landing in one event-loop turn run a single query, and none interrupts the typing pause.
 
 ### Patterns
 
@@ -89,7 +89,7 @@ An extension declares its commands in `extension.json` (the registry reads them 
 
 From that declaration the host does, for every provider alike:
 
-- **Routing.** A query that starts with the prefix goes to the provider alone, with `ctx.command = { id, prefix, rest, args }`, the prefix already removed: the user named the provider, so no other provider is asked. Every row it returns gets a boost of 20, like a matched pattern, and the default matcher scores rows against `rest`, not the prefix. **Read `ctx.command.rest`, never re-parse the prefix**: the user may have renamed it. Keep your old check as a fallback for hosts that do not send `ctx.command`.
+- **Routing.** A query that starts with the prefix goes to the provider alone, with `ctx.command = { id, prefix, rest, args }`, the prefix already removed: the user named the provider, so no other provider is asked and Smart Match stays out. Every row it returns gets a boost of 20, like a matched pattern, and the default matcher scores rows against `rest`, not the prefix. **Read `ctx.command.rest`, never re-parse the prefix**: the user may have renamed it. Keep your old check as a fallback for hosts that do not send `ctx.command`.
 - **The user's prefix.** A provider with commands gets the reserved `prefix` setting (a string, listed first on its settings screen and returned in `ctx.settings.prefix`); the host applies it to the first command. Two enabled providers with the same prefix: the earlier one in registry order answers, the other is skipped for that prefix.
 - **The hint line.** While the query starts with a command, the line under the search field shows the command's `title`, then the name and `hint` of the argument the caret is on ("Translate · to: a language code or name (optional)"); with every argument typed, the `summary`.
 - **Ghost placeholders.** The arguments still to type are drawn after the caret in the field's own font (`[to] <text>`, `<name>` required, `[name]` optional), and disappear one by one as words are typed. A word prefix on its own gets a soft highlight sweeping across it once when it is recognised, timed by the animation tier.
@@ -183,7 +183,32 @@ Sizes are the other half of that. The palette sets its rows in `title` and its s
 
 Put the folder (or a symlink to it, from a checkout of this repository) under `~/.local/share/keystroke/extensions/<id>`. The registry picks it up the next time the palette opens, lists it with a **local** badge, and, once turned on, runs it exactly as a shipped one; a local folder with the same id as a shipped extension replaces it, which is how you iterate on one that already ships. `bin/keystroke check-extensions <folder>` runs the same checks as the pull request review.
 
-## Enum option labels
+## Optional Smart Match catalog
+
+API 1 providers may add `catalog: function(ctx) { return rows }`. It enumerates
+current available command/navigation rows for the requested scope, independently
+of query wording. Use the normal stable IDs, actions, confirmations, and display
+metadata, plus `path`, `keywords`, `description`, and optionally a single-sentence
+`intentDescription` stating the outcome. Return quickly from cached state and call
+`ctx.pending()` / `host.requery()` when asynchronous catalog state changes: the host
+enumerates catalogs once per summon, scope or configuration change and after such
+a call, never per keystroke. Filter
+unavailable actions and other scopes before returning them. Do not enumerate
+clipboard contents, file contents, recent conversations, or unbounded data.
+
+The host uses at most 6,000 catalog rows in a query. It sends IDs and descriptive
+text to a local embedding helper; executable actions stay in QML and are resolved
+against the latest catalog. Disabled rows are never semantic suggestions. Providers
+without this optional method keep their existing lexical behavior; bundled providers
+also contribute their root navigation entries. Extensions are never enumerated by
+calling their query method with invented empty input.
+
+`intentFamily`, when supplied, can identify `launch`, `navigate`, `install`, `remove`,
+`default`, `restart`, `record-start`, `record-stop`, `toggle`, `enable`, or `disable`.
+This constrains suggestions for explicit command families and directions; it does
+not authorize execution. Do not describe a toggle as an idempotent on/off action
+unless the action actually implements that behavior. Existing confirmations and
+provider `activate()` are preserved.
 
 Enum setting schemas can optionally provide `optionLabels: { value: "Visible label" }`.
 The stored option values and validation remain unchanged; both choice rows and the

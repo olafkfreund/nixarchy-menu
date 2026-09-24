@@ -1,6 +1,6 @@
 # Keystroke
 
-A Raycast-style command palette that **replaces the Omarchy menu**. One native Omarchy `menu` plugin in QML and JavaScript, running inside the existing `omarchy-shell` process, themed by whatever Omarchy theme is active. Type, or speak, what you want: apps, the whole Omarchy menu, calculations, conversions, colors, emoji, clipboard history, files, Codex, and anything an extension adds.
+A Raycast-style command palette that **replaces the Omarchy menu**. One native Omarchy `menu` plugin in QML and JavaScript, running inside the existing `omarchy-shell` process, themed by whatever Omarchy theme is active. Type, or speak, what you want: apps, the whole Omarchy menu, calculations, conversions, colors, emoji, clipboard history, files, Codex, and anything an extension adds. Smart Match, a small embedding model running locally, understands what you mean when the words do not match exactly.
 
 **[Explore the feature showcase and installation guide →](https://evindor.github.io/keystroke/)** · **[Read the usage guide: every feature, with a screenshot and one thing to try →](https://evindor.github.io/keystroke/guide/)**
 
@@ -19,6 +19,16 @@ From a checkout, `bin/keystroke install` copies the tree into `~/.config/omarchy
 Requires Omarchy ≥ 4.0.2 (Quickshell 0.3, Qt 6.11). Like every Omarchy plugin, Keystroke runs unsandboxed inside your shell with your permissions; the code is here to read.
 
 ## What it does
+
+Smart Match defaults to **Voice and text** with the small **2M** embedding model.
+The first matching query fetches the model (8 MB, pinned digest) and starts the
+compiled engine shipped with the plugin (a static x86_64 binary, rebuilt byte for
+byte and attested in CI, see [docs/engine-provenance.md](docs/engine-provenance.md);
+16 MiB resident, ready in tens of milliseconds). On another architecture `cargo` builds it once from
+the included source, and without a Rust toolchain Python 3 with `uv` installs the
+equivalent pinned runtime instead. Ordinary search remains available
+during setup; checkout installation prepares everything ahead of time. After
+setup, matching works offline.
 
 - **Type anything**: apps, Omarchy commands, `sqrt(144) + 15% of 80`, `2m in feet`, `32 F to C`, `10am pt`, `10 am in London`, `now in tokyo`, `#ff6644`, `:smile`, `readme`, `timer 10m tea`, `tr bonjour`.
 - **Commands explain themselves.** Type a prefix such as `tr`, `timer` or `:` and the line under the search field names the action and the argument you are on (*Translate · to: a language code or name*), while the arguments still to type appear after the caret as `[to] <text>` and vanish as you fill them. Type the name instead (`transl`) and `Tab` types the prefix for you; while you type, `Tab` moves to the next argument. `/` lists every command with its usage; each extension's screen starts with the same usage and examples you can run with `↵`. Every prefix can be renamed in the provider's settings.
@@ -51,6 +61,28 @@ Third-party extensions live inside Keystroke itself, one folder each under [exte
 **Write one.** An extension is a folder with an `extension.json` (name, version, description, icon, `apiVersion`, and the **commands** it answers to: prefix, arguments and examples, which become its Usage section, its hint line and its entry on the `/` screen) and a `Service.qml` exposing a `provider` object with `query(ctx)`. It can declare the shapes of text it answers as **patterns** (regular expressions with a boost: `price = 10` lifts Calpad's offer above the assistant hand-offs without Calpad knowing about them), carry its own **image icon** on every row about it, and ship a **view** of its own over the palette card. The reference is [extensions/timer](extensions/timer/): countdown timers with settings, a scoped screen, a service that outlives the palette, a sound when a timer ends, a countdown next to the menu button in the bar and unit tests, small enough to read in one sitting. [extensions/translate](extensions/translate/) is Google Translate without an account (`tr bonjour`, `tr fr good morning`, `bonjour to english`), with an editor view, a target-language picker and selection rows; it shows an extension with a view, patterns and network access. The contract is [docs/providers.md](docs/providers.md); the step-by-step guide for people and coding agents, from the first folder to the pull request, is [CONTRIBUTING.md](CONTRIBUTING.md#build-an-extension).
 
 ## Voice
+## Smart Match
+
+**Keystroke Settings > Matching** contains:
+
+- **Smart match** — “Match queries using an embedding model”: **Off** (model
+  unloaded), **Only voice**, or **Voice and text** (default).
+- **Matching model** — **Small (2M)** (default) or **Large (8M)**. Large downloads
+  once when first used; switching Off releases the model but keeps its files.
+
+Smart Match supplements exact and fuzzy search with action descriptions and local
+semantic suggestions. It keeps launch/install/remove and start/stop distinct,
+recognizes small typos, and offers Chromium for “launch Chrome” when Chrome is
+absent. Spoken arithmetic such as “27 plus 90” becomes `27 + 90`; dictation and
+assistant prompts retain the original transcript. Results still require Enter and
+keep their existing confirmations. Ambiguous speech can still need correction.
+
+Both models run locally on CPU. The runtime unloads after two idle minutes, and a
+setup failure leaves ordinary matching available. Use **Retry Smart Match** in the
+Matching settings screen or `bin/keystroke matching` to retry installation. Runtime
+files live under `~/.local/share/keystroke/matching` (or `XDG_DATA_HOME`). More detail
+is in [the matching runtime documentation](matching/README.md).
+
 
 Keystroke dictates through [voxtype](https://voxtype.io), the optional dictation daemon Omarchy installs from Install › AI › Dictation. Keystroke Settings › Voice shows **Voxtype voice command integration**, on by default as soon as `voxtype` is on the `PATH`, and offers Omarchy's installer when it is not. Keystroke uses that ordinary installation as-is: it does not install a fork, replace the user service, or edit `~/.config/voxtype/config.toml`. Model, language, audio, VAD and output preferences remain entirely under `voxtype configure`.
 

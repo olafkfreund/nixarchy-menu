@@ -15,8 +15,10 @@ import "core/Settings.js" as Settings
 import "core/VoiceBindings.js" as VoiceBindings
 import "core/Intent.js" as Intent
 import "core/Patterns.js" as Patterns
+import "core/SmartMatch.js" as SmartMatch
 import "core/Motion.js" as Motion
 import "core/Commands.js" as Commands
+import "matching" as Matching
 
 // Keystroke: an extension-first command palette that replaces the Omarchy
 // menu. Hosted by omarchy-shell as a `menu` plugin (see manifest.json).
@@ -85,6 +87,7 @@ Item {
   function showProviderView(key) {
     var entry = root.registryEntry(key)
     if (!entry || !root.providerEnabled(entry) || !entry.provider.view) { root.errorMessage = "Provider view is unavailable"; return }
+    matchingSession.cancelRequest()
     root.providerViewRawQuery = root.voiceRawText
     root.activeProviderKey = key
     providerView.sourceComponent = entry.provider.view
@@ -120,6 +123,42 @@ Item {
       description: "Instant maps and unmaps the palette at once; Fade and Slide up follow the animation tier" }
   ]
   property var paletteSettings: Settings.values(config, ["palette"], paletteSchema)
+  readonly property var matchingSchema: SmartMatch.SCHEMA
+  readonly property var matchingSettings: Settings.values(config, ["matching"], matchingSchema)
+  readonly property string matchingStamp: matchingSession.status + "|" + matchingSession.error
+  function matchingModel() { return { schemas: root.matchingSchema, values: root.matchingSettings, status: matchingSession.status, error: matchingSession.error } }
+  Matching.Session {
+    id: matchingSession
+    enabled: root.matchingSettings.mode !== "off"
+    model: root.matchingSettings.model
+    onChanged: if (root.opened && !root.confirmPending) root.requery({ catalog: false })
+  }
+  property var intentDescriptions: ({})
+  property var intentDescriptionKeys: ({})
+  FileView {
+    path: Qt.resolvedUrl("matching/descriptions.json").toString().replace("file://", "")
+    printErrors: false
+    onLoaded: { try { root.intentDescriptions = JSON.parse(text()); root.requery() } catch (_) { } }
+  }
+  FileView {
+    path: Qt.resolvedUrl("matching/description-keys.json").toString().replace("file://", "")
+    printErrors: false
+    onLoaded: { try { root.intentDescriptionKeys = JSON.parse(text()); root.requery() } catch (_) { } }
+  }
+  // The fingerprint hash is memoized per row identity: hashing costs about
+  // 25 µs per row in the QML engine and the catalog is rebuilt as a whole.
+  property var describeCache: ({})
+  function describe(row) {
+    var prefix = row.providerKey === "omarchy" ? "menu:" : row.providerKey === "applications" ? "app:" : row.providerKey === "hotkeys" ? "hotkey:" : ""
+    var id = prefix + row.id
+    if (prefix === "app:" && !root.intentDescriptionKeys[id]) id += ".desktop"
+    var key = root.intentDescriptionKeys[id]
+    if (!key || key.title !== row.title) return row
+    var source = String(row.descriptionKey || ""), hit = root.describeCache[row.uid]
+    if (!hit || hit.source !== source) { hit = { source: source, hash: Qt.md5(source) }; root.describeCache[row.uid] = hit }
+    if (key.key === hit.hash) row.intentDescription = root.intentDescriptions[id] || ""
+    return row
+  }
   function paletteValues() { return root.paletteSettings }
   function settingsFor(entry) { return Settings.values(root.config, ["providers", entry.key], entry.settingsSchema || entry.provider.settings || []) }
 
@@ -629,6 +668,7 @@ Item {
   }
 
   function openDmenu(payload) {
+    matchingSession.cancelRequest()
     root.closeProviderView()
     clipboardTransfer.cancel()
     if (root.dmenuActive && root.requestActive) root.finishRequest(null)   // a new caller cancels the previous one
@@ -664,6 +704,7 @@ Item {
   }
 
   function cancel(preserveTransfer) {
+    matchingSession.cancelRequest()
     root.closeProviderView()
     if (preserveTransfer !== true) clipboardTransfer.cancel()
     if (root.dmenuActive) root.finishRequest(null)
@@ -684,11 +725,13 @@ Item {
   function setQuery(text) { clipboardTransfer.cancel(); root.voiceCancel(); search.text = String(text || ""); root.edited(); return "ok" }
 
   // Providers call this when asynchronous results land; the selection is kept.
-  // Calls landing in one event-loop turn run a single query, and none cuts
-  // short the typing pause: the pending query reads the latest data when the
-  // user pauses. The { catalog } option is accepted and ignored.
+  // Their Smart Match catalog is enumerated again unless the caller says it did
+  // not change ({ catalog: false }). Calls landing in one event-loop turn run a
+  // single query, and none cuts short the typing pause: the pending query reads
+  // the latest data when the user pauses.
   function requery(options) {
-    root.invalidateProviders(options && options.provider)
+    if (!options || options.catalog !== false) root.invalidateCatalog()
+    else root.invalidateProviders(options.provider)
     if (!root.opened || debounce.running) return
     refresh.start()
   }
@@ -703,7 +746,68 @@ Item {
   }
   Timer { id: refresh; interval: 0; onTriggered: if (!debounce.running) root.runQuery() }
 
-  function invalidateCatalog() { root.invalidateProviders() }
+  // ------------------------------------------------------ Smart Match catalog
+  // Providers enumerate their catalog only when something may have changed: a
+  // provider reported new data through requery(), the palette opened, the
+  // registry or configuration changed, or the scope differs. Every keystroke
+  // reuses the rows; the documents filtered under one set of intent
+  // constraints are reused by every query sharing those constraints.
+  property var catalogCache: null
+  function invalidateCatalog() {
+    root.catalogCache = null
+    root.invalidateProviders()
+    // The first keystroke should not pay for the enumeration: build it while
+    // the palette sits open with nothing typed.
+    if (root.opened && !root.dmenuActive) prewarm.restart()
+  }
+  Timer {
+    id: prewarm; interval: 0
+    onTriggered: {
+      if (!root.opened || root.dmenuActive || root.providerViewActive || root.catalogCache) return
+      if (!SmartMatch.enabled(root.matchingSettings.mode, !!root.voiceRawText)) return
+      var sc = root.scope, owner = sc.split("/")[0]
+      root.catalogFor(sc, owner, sc.indexOf("/") >= 0 ? sc.slice(owner.length + 1) : "")
+    }
+  }
+  function catalogFor(scope, owner, sub) {
+    var cache = root.catalogCache
+    if (cache && cache.scope === scope) return cache
+    var rows = [], seen = ({}), pend = false, mark = function() { pend = true }
+    for (var i = 0; i < providerRegistry.entries.length; i++) {
+      var entry = providerRegistry.entries[i]
+      if (!root.providerEnabled(entry)) continue
+      if (scope && owner !== entry.key) continue
+      var ctx = { query: "", rawQuery: "", scope: scope, sub: scope ? sub : "", generation: root.generation, settings: root.settingsFor(entry),
+                  patterns: Patterns.evaluate(entry.patterns, ""), pending: mark, host: root, shell: root.shell, appLibrary: root.appLibrary, omarchyPath: root.omarchyPath }
+      try {
+        var candidates = []
+        if (typeof entry.provider.catalog === "function") candidates = entry.provider.catalog(ctx) || []
+        else if (!scope && entry.source === "bundled") {
+          // Older providers contribute only navigation rows, never arbitrary
+          // clipboard/file content or executable results from an empty query.
+          candidates = (entry.provider.query(ctx) || []).filter(function(c) { return c.action && c.action.type === "navigate" })
+        }
+        for (var c = 0; c < candidates.length && rows.length < 6000; c++) {
+          var candidate = root.normalize(candidates[c], entry, "", 0)
+          if (!candidate || candidate.disabled || candidate.tier !== "item" || seen[candidate.uid]) continue
+          seen[candidate.uid] = true
+          rows.push(root.describe(candidate))
+        }
+      } catch (e) { console.warn("keystroke: provider", entry.key, "catalog failed:", e) }
+    }
+    cache = { scope: scope, rows: rows, pending: pend, chrome: SmartMatch.hasChrome(rows), documents: ({}), documentKeys: [], lexical: { text: null, scores: null } }
+    root.catalogCache = cache
+    return cache
+  }
+  function documentsFor(cache, req) {
+    var key = SmartMatch.constraintKey(req), hit = cache.documents[key]
+    if (hit) return hit
+    if (cache.documentKeys.length >= 16) { cache.documents = ({}); cache.documentKeys = [] }
+    hit = SmartMatch.documents(cache.rows, req)
+    cache.documents[key] = hit
+    cache.documentKeys.push(key)
+    return hit
+  }
 
   function runQuery() {
     if (!root.opened || root.providerViewActive) return
@@ -716,8 +820,12 @@ Item {
     var command = !root.dictationMode && !sc ? Commands.match(root.commandItems(), raw) : null
     root.updateCommandLive()
     var exclusive = !!(command && command.exclusive)
+    var smart = !root.dictationMode && !exclusive && SmartMatch.enabled(root.matchingSettings.mode, !!root.voiceRawText)
+    var req = SmartMatch.request(raw)
     // Provider queries keep case and arguments (paths, units, extension input).
+    // Command rewrites belong to catalog matching; only whole arithmetic is substituted.
     var q = root.voiceRawText && !root.dictationMode ? Intent.normalize(root.voiceRawText) : search.text
+    if (smart && req.math) q = req.math
     var owner = sc.split("/")[0]
     var sub = sc.indexOf("/") >= 0 ? sc.slice(owner.length + 1) : ""
     var collected = [], errors = [], pend = false, matchedPatterns = ({})
@@ -739,10 +847,24 @@ Item {
       if (cached.error) errors.push(cached.error)
     }
     if (root.configError) errors.push(root.configError)
+    if (smart && q) {
+      // A blocked or arithmetic request keeps the catalog out of the merge and
+      // sends nothing to the helper.
+      var catalog = !req.blocked && !req.math ? root.catalogFor(sc, owner, sub) : null
+      var documents = catalog ? root.documentsFor(catalog, req) : { rows: [], signature: "" }
+      var matchKey = JSON.stringify([raw, sc, root.matchingSettings.model, documents.signature])
+      var hasAnswer = collected.some(function(r) { return r.tier === "answer" })
+      if (documents.rows.length && !hasAnswer && raw.length <= 1024) matchingSession.submit(matchKey, raw, documents.rows, documents.signature)
+      else matchingSession.cancelRequest()
+      if (catalog && catalog.pending) pend = true
+      collected = SmartMatch.merge(collected, catalog ? catalog.rows : [], req, matchingSession.resultKey === matchKey ? matchingSession.matches : [],
+                                   catalog ? catalog.chrome : false, catalog ? catalog.lexical : null)
+    } else matchingSession.cancelRequest()
     var ranked = Match.rank(collected, root.bonusFor)
     root.applyRows(ranked.slice(0, 120))
     root.lastPatterns = matchedPatterns
-    root.pending = pend
+    root.pending = pend || (smart && matchingSession.requestedKey !== "" && matchingSession.busy)
+    if (smart && matchingSession.error) errors.push(matchingSession.error)
     root.errorMessage = errors.join(" · ")
     root.afterRows()
   }
@@ -986,6 +1108,12 @@ Item {
     }
     var row = root.current
     if (!row || !row.uid || row.disabled) return
+    if (row.smartMatch) {
+      var selectedId = row.uid
+      root.runQuery()
+      row = root.rows.filter(function(r) { return r.uid === selectedId })[0]
+      if (!row || row.disabled) return
+    }
     var entry = root.registryEntry(row.providerKey)
     if (!entry || !root.providerEnabled(entry)) return
     var effect = alternate && row.altAction ? row.altAction : row.action
@@ -1014,6 +1142,7 @@ Item {
 
   function perform(effect, row) {
     var type = effect.type
+    if (type === "matching-retry") { matchingSession.retry(); root.requery(); return }
     if (type === "noop") return
     if (type === "provider-view") { root.showProviderView(effect.provider); return }
     if (type === "dictate") {
@@ -1079,6 +1208,7 @@ Item {
       current: { uid: root.current.uid || "", icon: root.current.icon || "", iconSource: root.current.iconSource || "", badge: root.current.badge || "", tier: root.current.tier || "" },
       modelCount: resultModel.count, providers: providerRegistry.entries.map(function(e) { return e.key }), problems: providerRegistry.problems, bar: root.barList,
       applications: { library: !!root.appLibrary, entries: appEntries.length },
+      matching: { mode: root.matchingSettings.mode, model: root.matchingSettings.model, loaded: matchingSession.loaded, status: matchingSession.status, error: matchingSession.error },
       error: root.errorMessage, configError: root.configError, status: root.statusMessage,
       voice: { backend: "voxtype", state: voice.phase, trigger: root.voiceTrigger, enabled: root.voiceEnabled, detected: voice.detected, version: voice.version,
                command: voice.command, daemon: voice.daemonState, bindings: root.voiceBindingsStatus, frames: voice.history.length, live: voice.liveText } })
