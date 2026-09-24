@@ -36,7 +36,8 @@ ShellRoot {
     menu.rowsLoaded = true
   }
   NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
-  Timer { interval: 250; running: true; onTriggered: {
+  Timer { interval: 250; repeat: true; running: true; onTriggered: {
+    if (!palette.configSettled) return; running = false   // start once the on-disk load has applied, or it would undo applyConfigText
     palette.applyConfigText(JSON.stringify({ version: 1, matching: { mode: "off" }, providers: { applications: { enabled: false } } }))
     test.appsRoute()
     palette.open('{"menu":"apps"}')

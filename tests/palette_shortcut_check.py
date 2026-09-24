@@ -52,6 +52,7 @@ ShellRoot {
  }
  Timer { interval:250; repeat:true; running:true; onTriggered:{ if (test.busy) return; test.busy = true; try {
    if (test.stage === 0) {
+   if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
    palette.testAppLibrary = fakeApps
    palette.applyConfigText(JSON.stringify({version:1,matching:{mode:"off"}}))
    palette.open('{"query":"test app"}')

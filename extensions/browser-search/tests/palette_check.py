@@ -57,6 +57,7 @@ ShellRoot {
     if (palette.pending || (service() && service().inflight)) return
     switch (test.stage) {
     case 0:
+      if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
       if (!palette.registry.manifests["browser-search"]) return
       check(!service(), "disabled extension is not loaded")
       configure(true, true, true)

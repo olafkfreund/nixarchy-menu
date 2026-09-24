@@ -121,6 +121,7 @@ ShellRoot {
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    switch (test.stage) {
    case 0:   // the scan at creation found both folders; nothing is loaded
+     if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
      if (!palette.registry.manifests["probe"] || !palette.registry.manifests["timer"]) return
      test.check(palette.registry.manifests["timer"].source === "builtin" && palette.registry.manifests["probe"].source === "local", "shipped and local folders are both found")
      test.check(keys().indexOf("timer") >= 0 && keys().indexOf("probe") >= 0 && keys().indexOf("broken") >= 0, "every extension is listed: " + keys().join(","))

@@ -49,7 +49,8 @@ ShellRoot {
    }}]
  }
  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
- Timer { interval:250; running:true; onTriggered:{
+ Timer { interval:250; repeat:true; running:true; onTriggered:{
+   if (!palette.configSettled) return; running = false   // start once the on-disk load has applied, or it would undo applyConfigText
    palette.testMatching.command=["python3",%s]
    test.configure("voice")
    palette.open('{}'); test.fixture()

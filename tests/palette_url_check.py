@@ -66,6 +66,7 @@ ShellRoot {
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    switch (test.stage) {
    case 0:
+     if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
      if (!palette.registryEntry("open-url")) return
      palette.open(JSON.stringify({query: test.url}))
      test.stage++; return

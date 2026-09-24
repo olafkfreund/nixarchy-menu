@@ -50,7 +50,8 @@ ShellRoot {
  function highlightTarget() { var c = palette.testList.currentItem; return c.y + c.rowY }
  function configure(tier, transition) { palette.applyConfigText(JSON.stringify({version:1,matching:{mode:"off"},palette:{animations:tier,windowTransition:transition}})) }
  property real restingY: 0
- Timer { interval:250; running:true; onTriggered: {
+ Timer { interval:250; repeat:true; running:true; onTriggered: {
+   if (!palette.configSettled) return; running = false   // start once the on-disk load has applied, or it would undo applyConfigText
    // ---- Fluid tier, sliding window
    test.configure("fluid", "slide")
    test.check(palette.motion.level === 2 && palette.motion.window >= 80, "fluid profile is active")

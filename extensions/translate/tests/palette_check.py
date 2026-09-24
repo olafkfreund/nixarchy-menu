@@ -109,6 +109,7 @@ ShellRoot {
    if (test.capturing) return
    switch (test.stage) {
    case 0:   // listed, not loaded
+     if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
      if (!palette.registry.manifests["translate"]) return
      test.check(palette.registry.manifests["translate"].source === "builtin" && !entry("translate").loaded, "translate is shipped and off")
      test.check(Object.keys(palette.registry.services).length === 0, "no service exists while off")
