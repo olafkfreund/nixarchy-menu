@@ -73,3 +73,8 @@ Revert the commit. Geometry returns to today's fixed size.
 - **Scale 1:** the card measured about 766×581 at (577, 210). `cardRect` gives 768×583 at (576, 209), so it matches within the 1px border.
 - **Scale 2** (logical 960×540): the card measured 1280×963 physical at y=85, which is 640×482 logical at y≈42, bottom 524. That's exactly the compact `cardRect`. It clears the bar, and the text scales with the output.
 - **Gotcha:** Hyprland 0.56 with Lua config has no `hyprctl keyword monitor`. The scale was set with `hyprctl eval 'hl.monitor({...})'` and restored to 1.
+
+## Deviation at merge (rebase onto #12)
+#12 (merged first) gates every palette harness on `palette.configSettled`. The
+new `tests/palette_geometry_check.py` predates that, so on rebase it gets the
+same repeating-check gate as `palette_motion_check.py`.

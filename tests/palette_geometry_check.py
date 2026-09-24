@@ -39,7 +39,8 @@ ShellRoot {
    test.check(c.x >= m && c.x + c.width <= w - m, w + "x" + h + ": side margins: " + c.x + "+" + c.width)
    test.check(c.width === want, w + "x" + h + ": width " + c.width + " === " + want)
  }
- Timer { interval:250; running:true; onTriggered: {
+ Timer { interval:250; repeat:true; running:true; onTriggered: {
+   if (!palette.configSettled) return; running = false   // start once the on-disk load has applied, or it would undo applyConfigText
    palette.applyConfigText(JSON.stringify({version:1,matching:{mode:"off"},palette:{animations:"off",windowTransition:"instant"}}))
    palette.shell = {bar:{barSize:26, barHidden:false, position:"top"}}
    palette.open('{}')
