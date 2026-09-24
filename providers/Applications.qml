@@ -24,7 +24,6 @@ Item {
     description: "Launch installed desktop apps",
     settings: [],
     query: function(ctx) { return root.query(ctx) },
-    catalog: function(ctx) { return root.query({ scope: "applications", query: "" }) },
     opened: function() { if (root.library) root.library.refreshIcons() }
   })
 

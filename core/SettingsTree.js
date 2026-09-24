@@ -113,16 +113,6 @@ function build(model) {
     description: "layout density accent preview theme animations motion transitions", action: navigate("settings/palette", "Appearance") }))
   schemaNodes(nodes, screens, ["palette"], model.paletteSchema || [], model.paletteValues || {}, "settings/palette", appearance, "palette")
   voiceNodes(nodes, screens, rootParts, model.voice)
-  if (model.matching) {
-    var matching = rootParts.concat(["Matching"])
-    nodes.push(node("settings", matching, { id: "matching", section: "Keystroke", order: 2, subtitle: "Smart match and model size",
-      keywords: "semantic embeddings search", action: navigate("settings/matching", "Matching") }))
-    schemaNodes(nodes, screens, ["matching"], model.matching.schemas, model.matching.values, "settings/matching", matching, "matching")
-    nodes.push(node("settings/matching", matching.concat([model.matching.error ? "Retry Smart Match" : model.matching.status || "Model unloaded"]), {
-      id: "matching/status", order: 10, listOnly: true, disabled: !model.matching.error,
-      subtitle: model.matching.error || "Models are downloaded once and matched locally", verb: model.matching.error ? "Retry" : "",
-      action: model.matching.error ? { type: "matching-retry" } : { type: "noop" } }))
-  }
   nodes.push(node("settings", rootParts.concat(["Open config file"]), { id: "config", subtitle: String(model.configPath || ""), icon: "", section: "Keystroke",
     verb: "Open file", order: 2, keywords: "json", description: "edit", action: { type: "edit" } }))
   // The usage guide on the website: every feature, key, prefix and extension
@@ -209,15 +199,3 @@ function rows(nodes, scope, query) {
   return out
 }
 
-function catalog(tree, scope) {
-  if (tree.screens[scope]) return []
-  var out = []
-  for (var i = 0; i < tree.nodes.length; i++) {
-    var n = tree.nodes[i]
-    if (n.listOnly || n.disabled || !within(n, scope)) continue
-    var r = row(n, 1, n.parts.slice(0, -1).join(" › ") || n.subtitle, "Settings")
-    r.path = n.path; r.keywords = n.keywords; r.description = n.description
-    out.push(r)
-  }
-  return out
-}

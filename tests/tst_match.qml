@@ -3,7 +3,6 @@ import QtTest
 import "../core/Match.js" as Match
 import "../core/Frecency.js" as Frecency
 import "../core/Files.js" as Files
-import "../core/SmartMatch.js" as Smart
 
 TestCase {
     name: "MatchAndRank"
@@ -95,8 +94,7 @@ TestCase {
                      score:Match.match(query,"Download video from web app"),action:{type:"hotkey",dispatcher:"exec",arg:"download-video"}}
         var window = {uid:"hotkeys/down",providerKey:"hotkeys",id:"down",title:"Expand window down a lot",tier:"item",
                       score:Match.match(query,"Expand window down a lot"),action:{type:"hotkey",dispatcher:"resizeactive",arg:"0 300"}}
-        var rows = Smart.merge([video,window,folder],[video,window],Smart.request(query),[{id:window.uid,score:.9}])
-        compare(Match.rank(rows,null)[0].id,"video")
+        var rows = [video,window,folder]
         var globalKey = Frecency.key(folder.providerKey,folder.id)
         var learnedKey = Frecency.queryKey(folder.providerKey,folder.id,query,"")
         var entries = Frecency.record({},globalKey,now)
@@ -106,8 +104,6 @@ TestCase {
               + Frecency.queryBonus(entries,Frecency.queryKey(r.providerKey,r.id,query,""),now)
         }
         compare(Match.rank(rows,boost)[0].id,"downloads")
-        // Also works with embeddings off; the learned preference is the final pass.
-        compare(Match.rank([video,window,folder],boost)[0].id,"downloads")
         entries = Frecency.parse(Frecency.serialize(entries))
         compare(Match.rank(rows,boost)[0].id,"downloads")
         compare(Frecency.queryBonus(entries,Frecency.queryKey("files","downloads","download video",""),now),0)

@@ -187,3 +187,9 @@ Verify: `jq . keystroke.example.json` succeeds, and `bash -n bin/keystroke` succ
 ### B: menumodel
 - `omarchy/LICENSE` never existed. `MenuModel.js` was the only file in `omarchy/`, so the directory is gone. Attribution now lives in the root `README.md` License line (commit C).
 - `catalogVisible()` is deleted with `catalog()`, because it had no other caller.
+
+### A: smartmatch
+- **`Intent.arithmetic()` is kept (step A4).** The spec called it dead, which is wrong. `Intent.normalize()` calls it first, and it turns "two plus two" into `2 + 2`, so spoken maths depends on it. Only `SmartMatch.request`'s use of it is gone.
+- **`tests/tst_match.qml`:** later code in the case uses `rows`, so it is set to `[video, window, folder]` instead of deleting lines 98-99. The duplicate "embeddings off" `compare` is removed.
+- **`requery(options)`** now calls `invalidateProviders(options && options.provider)`. `requery({provider})` without `catalog:false` used to clear every provider's cached rows, because the catalog was dirty. It now clears only the named provider's cache, which is correct because each cache holds only that provider's rows.
+- **`core/SettingsTree.js`:** `catalog(tree, scope)`, used only by `SettingsProvider.catalog`, is deleted with the Matching screen.
