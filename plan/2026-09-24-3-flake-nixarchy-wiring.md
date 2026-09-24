@@ -235,3 +235,14 @@ Owns:
 ### Lead: verification note
 - **Cache:** `nix flake check` served every check from cache on the first integration run, and the log showed no test output. Forced `nix build --rebuild -L` on `quickshell` and `engine` is what exposed the flaky currency check.
 - **CI:** CI builds from scratch, so a flaky check would have failed there at random.
+
+### Razer results (f67fab8), left installed
+- **Build:** `bin/nixarchy-menu install` built the engine, both models and the plugin on razer, then installed and enabled the plugin.
+- **Plugins:** `nixarchy.menu` enabled; `omarchy.menu` and `evindor.keystroke` disabled. The bar entry is `nixarchy.menu` only.
+- **Engine process:** `/nix/store/…-keystroke-matching-0.1.0/bin/keystroke-matching --model-dir /nix/store/…-keystroke-model-small --model small`.
+- **No download:** `~/.local/share/nixarchy-menu/matching` does not exist.
+- **Palette:**
+  - Smart Match is Ready. "27 plus 90" gives 117, "launch chrome" offers Chromium, and `sysshut` finds Shutdown.
+  - No provider problems.
+- **Large model:** switching to Large in the config gave Ready, with the engine on the `model-large` store path. Switching back to Small gave Ready. The config was restored byte-identical afterwards.
+- **Left installed for the user to test Smart Match**, as requested.
