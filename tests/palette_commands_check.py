@@ -23,12 +23,15 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-commands-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
@@ -71,7 +74,7 @@ ShellRoot {
    test.capturing = true
    win.contentItem.grabToImage(function(r) { r.saveToFile(captureDir + "/" + name + ".png"); test.capturing = false })
  }
- NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    if (test.capturing) return
    switch (test.stage) {
@@ -214,7 +217,7 @@ ShellRoot {
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=40)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette commands" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

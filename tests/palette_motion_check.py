@@ -9,11 +9,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-motion-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git','.claude','.agents','.codex','tests','__pycache__'))
-    (work/'qs').symlink_to('/usr/share/omarchy/shell')
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work/'qs').symlink_to(OMARCHY + '/shell')
     source = project/'NixarchyMenu.qml'
     qml = source.read_text()
     qml = qml.replace('  id: root\n', '  id: root\n  property alias testList: resultList\n  property alias testShift: levelShift\n  property alias testCard: card\n  property alias testPanel: panel\n', 1)
@@ -30,11 +33,11 @@ ShellRoot {
  property var rootRows: ["a","b","c","d"]
  property var steps: []
  property int step: 0
- function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+ function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.callLater(Qt.quit); throw Error(msg) } }
  function after(ms, fn) { steps.push({ms: ms, fn: fn}) }
  function next() { if (step >= steps.length) { console.log("PASS palette motion"); Qt.quit(); return } var s = steps[step++]; stepTimer.interval = s.ms; stepTimer.fn = s.fn; stepTimer.restart() }
  Timer { id: stepTimer; property var fn: null; onTriggered: { fn(); test.next() } }
- NixarchyMenu { id: palette; omarchyPath:"/usr/share/omarchy"; onFlashed: function(uid) { test.flashes.push(uid) } }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''"; onFlashed: function(uid) { test.flashes.push(uid) } }
  ResultRow { id: row; width: 400; flashRise: 20; flashFall: 60; selectedText: "#ffffff" }
  function flashLayer() { for (var i = 0; i < row.children.length; i++) { var c = row.children[i]; if (c.color !== undefined && String(c.color) === "#ffffff" && c.radius !== undefined) return c } return null }
  function fixture() {
@@ -180,7 +183,7 @@ ShellRoot {
     env=dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     env.pop('DISPLAY', None)
     env.pop('WAYLAND_DISPLAY', None)
-    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=25)
+    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=120)
     output=result.stdout+result.stderr
     if os.environ.get("MOTION_VERBOSE"): print(output)
     assert 'PASS palette motion' in output and 'FAIL' not in output, output

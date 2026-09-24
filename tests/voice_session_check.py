@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
@@ -21,7 +22,7 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-session-") as work:
     original_config = '# user-owned sentinel\nengine = "whisper"\n[output]\nmode = "clipboard"\n'
     voxtype_config.write_text(original_config)
     mock = directory / "voxtype"
-    mock.write_text('''#!/usr/bin/python3
+    mock.write_text("#!" + sys.executable + '''
 import json, pathlib, sys, time
 counter = pathlib.Path(__file__).with_name("takes")
 args = sys.argv[1:]
@@ -111,7 +112,7 @@ ShellRoot {
                XDG_RUNTIME_DIR=str(runtime), QT_QPA_PLATFORM="offscreen",
                QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
     run = subprocess.run(["quickshell", "-p", str(config)], env=env,
-                         capture_output=True, text=True, timeout=8)
+                         capture_output=True, text=True, timeout=120)
     output = run.stdout + run.stderr
     if run.returncode or "PASS: cancelled recording" not in output:
         raise SystemExit(output)

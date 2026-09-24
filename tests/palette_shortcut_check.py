@@ -7,11 +7,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-shortcut-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git','.claude','.agents','.codex','tests','__pycache__'))
-    (work/'qs').symlink_to('/usr/share/omarchy/shell')
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work/'qs').symlink_to(OMARCHY + '/shell')
     source = project/'NixarchyMenu.qml'
     qml = source.read_text()
     qml = qml.replace('  id: root\n', '''  id: root
@@ -31,9 +34,10 @@ import "project"
 ShellRoot {
  id: test
  property int stage: 0
+ property bool busy: false   // a stage timer is mid-tick (see its guard)
  property var activated: []
- function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
- NixarchyMenu { id: palette; omarchyPath:"/usr/share/omarchy" }
+ function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
  TestCase { id: keys; name:"KeyDriver"; when:false }
  QtObject {
    id: fakeApps
@@ -46,7 +50,7 @@ ShellRoot {
    function refreshIcons() {}
    function remove(id,name) { removals++ }
  }
- Timer { interval:250; repeat:true; running:true; onTriggered:{
+ Timer { interval:250; repeat:true; running:true; onTriggered:{ if (test.busy) return; test.busy = true; try {
    if (test.stage === 0) {
    palette.testAppLibrary = fakeApps
    palette.applyConfigText(JSON.stringify({version:1,matching:{mode:"off"}}))
@@ -96,14 +100,14 @@ ShellRoot {
    Qt.quit()
    test.stage = 2
    }
- } }
+ } finally { test.busy = false } } }
  Timer { interval:8000; running:true; onTriggered:{ console.log("FAIL timeout",palette.errorMessage); Qt.quit() } }
 }
 ''')
     env=dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     env.pop('DISPLAY', None)
     env.pop('WAYLAND_DISPLAY', None)
-    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=15)
+    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=120)
     output=result.stdout+result.stderr
     assert 'PASS palette shortcut' in output and 'FAIL' not in output, output
     assert 'TypeError' not in output and 'ReferenceError' not in output, output

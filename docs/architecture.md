@@ -114,17 +114,15 @@ Match highlighting in rows and a permanent publishing id.
 ## Smart Match
 
 `matching/Session.qml` manages one CPU helper, at most one in-flight request and one
-latest queued request. `helpers/matching-start.py` fetches the fixed Model2Vec
-revision (pinned SHA-256 digests, no client library), then execs the compiled engine
-(`matching/engine`, Rust: the BERT WordPiece tokenizer, mean pooling over the
-safetensors embedding table and cosine ranking; the shipped static
-`matching/bin/keystroke-matching` when its manifest matches this machine and the
-source, otherwise built once per source revision with `cargo`). Without cargo it
-provisions the hash-locked Python runtime and execs `matching-worker.py`, which
-speaks the same protocol. Off stops the process immediately, a model change replaces
-it, and two minutes of inactivity unloads it (the engine reloads in about 60 ms).
-Errors retain lexical search and expose a retry in Settings > Matching. See
-`matching/README.md` for storage, installation, protocol and model details.
+latest queued request. It runs the compiled engine directly (`matching/engine`,
+Rust: the BERT WordPiece tokenizer, mean pooling over the safetensors embedding
+table and cosine ranking) against a Model2Vec model directory. The Nix package
+builds the engine and fetches both models at build time (pinned SHA-256 digests),
+then substitutes their store paths into `Session.qml`; nothing is downloaded at
+run time. Off stops the process immediately, a model change replaces it, and two
+minutes of inactivity unloads it (the engine reloads in about 60 ms). Errors retain
+lexical search and expose a retry in Settings > Matching. See `matching/README.md`
+for the protocol and model details.
 
 Per keystroke the host does no catalog work: catalogs are enumerated once per summon,
 scope or configuration change and after a provider's `requery()`, kept with their

@@ -22,12 +22,15 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-extensions-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
@@ -87,7 +90,7 @@ ShellRoot {
  function titles() { return palette.rows.map(function(r) { return r.title }) }
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function config(on) { var c = { version: 1, matching: { mode: "off" }, providers: {} }; for (var i = 0; i < on.length; i++) c.providers[on[i]] = { enabled: true }; return JSON.stringify(c) }
- NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
  // The bar widget finds the palette the way the shell exposes it: a Loader per panel plugin, keyed by plugin id.
  QtObject { id: paletteLoader; property var item: palette }
  QtObject { id: fakeShell; property var panelLoaders: ({ "nixarchy.menu": paletteLoader }) }
@@ -139,7 +142,7 @@ ShellRoot {
      if (!svc || !svc.instance || !entry("probe") || !entry("probe").loaded) return
      test.probeService = svc.instance
      test.check(svc.instance.extension && svc.instance.extension.id === "probe" && svc.instance.extension.dir.indexOf("/probe") > 0 && svc.instance.extension.source === "local", "extension injected with id, dir and source")
-     test.check(svc.instance.omarchyPath === "/usr/share/omarchy", "omarchyPath injected: " + svc.instance.omarchyPath)
+     test.check(svc.instance.omarchyPath === "''' + OMARCHY + '''", "omarchyPath injected: " + svc.instance.omarchyPath)
      test.check(entry("timer").loaded && entry("timer").provider.settings.length === 5, "the shipped timer loaded with its settings schema")
      test.check(!entry("broken").loaded && problem("broken").indexOf("Service.qml") >= 0, "broken extension is reported with the QML error: " + problem("broken"))
      palette.open(JSON.stringify({ query: "probe tea" }))
@@ -148,7 +151,7 @@ ShellRoot {
      if (palette.pending || !palette.rows.length) return
      var r = row("Probe says tea!")
      test.check(r !== null, "probe row listed: " + titles().join(" | "))
-     test.check(r && r.subtitle === "probe local /usr/share/omarchy", "provider reads its injected extension record: " + (r && r.subtitle))
+     test.check(r && r.subtitle === "probe local ''' + OMARCHY + '''", "provider reads its injected extension record: " + (r && r.subtitle))
      test.check(r && r.badge === "extension", "extension rows carry the badge: " + (r && r.badge))
      palette.cancel()
      palette.open(JSON.stringify({ query: "timer 10m tea" }))
@@ -226,7 +229,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette extensions" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

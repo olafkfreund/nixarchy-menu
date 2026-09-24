@@ -2,8 +2,9 @@
 # One-time copy of Keystroke's user state to the nixarchy-menu paths. Run by
 # NixarchyMenu.qml at load. Each new path is derived the way its reader
 # derives it; the old paths are never modified, so going back to Keystroke
-# finds everything as it was. Not copied: matching/runtime, matching/engine,
-# install.lock and share/keystroke/voxtype (rebuilt, or upstream's own).
+# finds everything as it was. Not copied: share/keystroke/matching (the
+# engine and models ship with the package) and share/keystroke/voxtype
+# (upstream's own).
 
 failed=""
 
@@ -32,7 +33,6 @@ notify() {
 
 state=${XDG_STATE_HOME:-$HOME/.local/state}
 cache=${XDG_CACHE_HOME:-$HOME/.cache}
-data=${XDG_DATA_HOME:-$HOME/.local/share}
 
 m "$HOME/.config/omarchy/keystroke.json" "$HOME/.config/omarchy/nixarchy-menu.json"
 m "$HOME/.local/state/keystroke" "$HOME/.local/state/nixarchy-menu"
@@ -42,7 +42,6 @@ if [ "$state" != "$HOME/.local/state" ]; then
 fi
 m "$cache/keystroke" "$cache/nixarchy-menu"
 m "$HOME/.local/share/keystroke/extensions" "$HOME/.local/share/nixarchy-menu/extensions"
-m "$data/keystroke/matching/models" "$data/nixarchy-menu/matching/models"
 
 # Only after the copies: created first, it would make the migration skip it.
 mkdir -p "$HOME/.local/state/nixarchy-menu"

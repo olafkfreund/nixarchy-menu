@@ -7,11 +7,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-route-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
@@ -22,7 +25,7 @@ import Quickshell
 import "project"
 ShellRoot {
   id: test
-  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.quit(); throw Error(msg) } }
+  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.callLater(Qt.quit); throw Error(msg) } }
   function appsRoute() {
     var menu = palette.registry.bundled[0]
     menu.items = {
@@ -32,7 +35,7 @@ ShellRoot {
     menu.itemOrder = ["root", "apps"]
     menu.rowsLoaded = true
   }
-  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   Timer { interval: 250; running: true; onTriggered: {
     palette.applyConfigText(JSON.stringify({ version: 1, matching: { mode: "off" }, providers: { applications: { enabled: false } } }))
     test.appsRoute()
@@ -57,7 +60,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette routes" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

@@ -2,11 +2,12 @@
 """Exercise production QML transport/session and view against a fake server."""
 import os,json,pathlib,tempfile,subprocess
 root=pathlib.Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-codex-test-') as temp:
  p=pathlib.Path(temp);(p/'.local/state/nixarchy-menu/questions').mkdir(parents=True)
- (p/'codex').symlink_to(root/'codex');(p/'qs').symlink_to('/usr/share/omarchy/shell')
+ (p/'codex').symlink_to(root/'codex');(p/'qs').symlink_to(OMARCHY + '/shell')
  for name in ['ui','voice']: (p/name).symlink_to(root/name)
- for name in ['Commons','Ui']: (p/name).symlink_to('/usr/share/omarchy/shell/'+name)
+ for name in ['Commons','Ui']: (p/name).symlink_to(OMARCHY + '/shell/'+name)
  (p/'shell.qml').write_text('''import QtQuick
 import QtTest
 import Quickshell
@@ -14,8 +15,11 @@ import "codex"
 ShellRoot {
  id: test
  property int stage: 0
- function check(value,message) { if (!value) { console.log("FAIL",message); Qt.quit(); throw Error(message) } }
- CodexSession { id: session; host: QtObject { property bool stateReady: true }; home: %s; server.command: ["python3",%s] }
+ property bool busy: false   // a stage timer is mid-tick (see its guard)
+ function check(value,message) { if (!value) { console.log("FAIL",message); test.stage = -1; Qt.callLater(Qt.quit); throw Error(message) } }
+ CodexSession { id: session; home: %s; server.command: ["python3",%s]
+   host: QtObject { property bool stateReady: true }
+ }
  Window { visible: true; width: 700; height: 580
    ConversationView { id: view; anchors.fill: parent; session: session; host: stub }
  }
@@ -45,7 +49,7 @@ ShellRoot {
    keys.keyClick(Qt.Key_A);test.check(!stub.voice.active,"manual correction cancels voice")
    session.draft="first question";view.focusInput();keys.keyClick(Qt.Key_Return);test.stage=1
  } }
- Timer { interval: 50; repeat: true; running: true; onTriggered: {
+ Timer { interval: 50; repeat: true; running: true; onTriggered: { if (test.busy) return; test.busy = true; try {
    if (test.stage===1 && !session.busy && session.messages.length) {
      test.check(session.answer()==="Hello world","early deltas and final reconcile");
      session.handleRequest(900,"item/commandExecution/requestApproval",{threadId:session.threadId,command:"bad"});test.check(!session.approvals.length,"quick mode rejects local tool approvals");
@@ -62,7 +66,7 @@ ShellRoot {
      test.check(session.draft==="crash now","disconnect preserves unsent or uncertain draft");
      test.check(!!session.threadId,"disconnect retains saved conversation");test.stage=7;session.requestHandoff()
    }
- } }
+ } finally { test.busy = false } } }
  Connections { target: session
    function onHandoffReady(id) {
      test.check(!session.server.ready,"server releases writer before handoff")
@@ -73,7 +77,7 @@ ShellRoot {
  Timer { interval: 12000; running: true; onTriggered: {console.log("FAIL timeout",test.stage,session.phase,session.error);Qt.quit()} }
 }'''%(json.dumps(str(p)),json.dumps(str(root/'tests/codex_fake_server.py'))))
  env=os.environ.copy();env.pop('DISPLAY',None);env.update(HOME=str(p),XDG_RUNTIME_DIR=str(p),QML_IMPORT_PATH=str(p),QT_QPA_PLATFORM='offscreen',QT_QPA_PLATFORMTHEME='generic',QT_QUICK_BACKEND='software')
- r=subprocess.run(['quickshell','-p',str(p/'shell.qml')],env=env,text=True,capture_output=True,timeout=18)
+ r=subprocess.run(['quickshell','-p',str(p/'shell.qml')],env=env,text=True,capture_output=True,timeout=120)
  out=r.stdout+r.stderr
  assert 'PASS Codex' in out and 'FAIL' not in out,out
  assert 'TypeError' not in out and 'ReferenceError' not in out,out

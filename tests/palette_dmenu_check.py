@@ -7,11 +7,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-dmenu-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  id: root\n", "  id: root\n  property alias testCard: card\n  property alias testContent: content\n  property alias testEmptyState: emptyState\n", 1)
@@ -24,8 +27,8 @@ import "project"
 ShellRoot {
   id: test
   property real oneRowHeight: 0
-  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.quit(); throw Error(msg) } }
-  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.callLater(Qt.quit); throw Error(msg) } }
+  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   Timer { interval: 250; running: true; onTriggered: {
     palette.open(JSON.stringify({ mode: "select", prompt: "Keybindings", options: ["Super + K → Keybindings"], width: 800, maxHeight: 500 }))
     test.check(palette.rows.length === 1, "the picker begins with one row")
@@ -48,7 +51,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette dmenu" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

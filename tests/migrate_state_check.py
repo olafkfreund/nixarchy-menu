@@ -73,8 +73,7 @@ def run(home, extra_env=None, plugins_json="[]", nojq=False):
     return r, notes
 
 
-def seed(home, data=None, state=None, cache=None):
-    data = data or os.path.join(home, ".local/share")
+def seed(home, state=None, cache=None):
     state = state or os.path.join(home, ".local/state")
     cache = cache or os.path.join(home, ".cache")
     write(os.path.join(home, ".config/omarchy/keystroke.json"), b'{"providers":{"ai":{"provider":"claude"}}}')
@@ -83,9 +82,6 @@ def seed(home, data=None, state=None, cache=None):
     write(os.path.join(state, "keystroke/currency/rates.json"), b"cur")
     write(os.path.join(cache, "keystroke/currency/rates.json"), b"cache")
     write(os.path.join(home, ".local/share/keystroke/extensions/ext/extension.json"), b"{}")
-    write(os.path.join(data, "keystroke/matching/models/small/model.bin"), b"\x00model")
-    write(os.path.join(data, "keystroke/matching/runtime/bin/python"), b"venv")
-    write(os.path.join(data, "keystroke/matching/engine/engine"), b"engine")
     write(os.path.join(home, ".local/share/keystroke/voxtype/v"), b"vox")
 
 
@@ -101,9 +97,6 @@ def case_defaults():
         check(os.path.exists(n(".local/state/nixarchy-menu/questions/q.json")), "state subdirs copied")
         check(read(n(".cache/nixarchy-menu/currency/rates.json")) == b"cache", "cache copied")
         check(os.path.exists(n(".local/share/nixarchy-menu/extensions/ext/extension.json")), "extensions copied")
-        check(read(n(".local/share/nixarchy-menu/matching/models/small/model.bin")) == b"\x00model", "models copied")
-        check(not os.path.exists(n(".local/share/nixarchy-menu/matching/runtime")), "runtime skipped")
-        check(not os.path.exists(n(".local/share/nixarchy-menu/matching/engine")), "engine skipped")
         check(not os.path.exists(n(".local/share/nixarchy-menu/voxtype")), "voxtype skipped")
         after = snapshot(home)
         check(all(after.get(k) == v for k, v in before.items()), "old files byte-identical")
@@ -147,10 +140,9 @@ def case_failure():
 def case_xdg():
     with tempfile.TemporaryDirectory(prefix="nixarchy-menu-migrate-") as home:
         data, state, cache = (os.path.join(home, x) for x in ("xdata", "xstate", "xcache"))
-        seed(home, data, state, cache)
+        seed(home, state, cache)
         r, _ = run(home, {"XDG_DATA_HOME": data, "XDG_STATE_HOME": state, "XDG_CACHE_HOME": cache})
         check(r.returncode == 0, "xdg: exit 0 (%s)" % r.stderr.strip())
-        check(os.path.exists(os.path.join(data, "nixarchy-menu/matching/models/small/model.bin")), "xdg: models under XDG_DATA_HOME")
         check(os.path.exists(os.path.join(home, ".local/share/nixarchy-menu/extensions/ext/extension.json")), "xdg: extensions stay under $HOME")
         check(read(os.path.join(state, "nixarchy-menu/currency/rates.json")) == b"cur", "xdg: currency under XDG_STATE_HOME")
         check(os.path.exists(os.path.join(home, ".local/state/nixarchy-menu/usage.json")), "xdg: state dir stays under $HOME")

@@ -2,64 +2,58 @@
 
 The default is **Voice and text**, using **Small (2M)**. Settings are under
 nixarchy-menu Settings > Matching. **Only voice** leaves typed queries on the ordinary
-matcher. **Off** terminates the helper (including an in-progress installation),
-clears pending results and releases the model; downloaded files remain for reuse.
-**Large (8M)** downloads once when selected and first used. Both models run on CPU.
-An idle helper also exits after two minutes and reloads on the next eligible query.
+matcher. **Off** terminates the engine, clears pending results and releases the
+model. Both models ship with the package and run on CPU; switching to **Large (8M)**
+restarts the engine on the other model, with no download. An idle engine also exits
+after two minutes and reloads on the next eligible query.
 
-Installation from `bin/nixarchy-menu install` prepares Small. A plugin installed through
-Omarchy prepares the selected model lazily on its first eligible query. Setup runs
-outside the shell UI process, under the user's account, with no system package
-changes, and needs network access for the first download. A failed setup keeps
-lexical search working and adds a Retry Smart Match row to the Matching settings
-screen. `bin/nixarchy-menu matching [small|large]` can prepare models without enabling
-or restarting the plugin.
+The engine runs outside the shell UI process, under the user's account, and needs
+no network access. If it does not start within ten seconds, or stops, lexical search
+keeps working and the Matching settings screen shows a Retry Smart Match row.
 
 ## Engine
 
-`helpers/matching-start.py` first verifies or downloads the three model files
-(`config.json`, `tokenizer.json`, `model.safetensors`) for the pinned revision
-straight from Hugging Face, comparing each against the SHA-256 digest recorded in
-the script; a file cached by an earlier release's `huggingface_hub` layout is reused
-when its digest matches. It then serves the model through the first of:
+Nix builds and ships everything Smart Match runs; nothing is downloaded or built
+at runtime.
 
-1. `matching/bin/keystroke-matching`, the static x86_64 binary shipped with the
-   plugin (700 KB, musl, no shared-library dependencies). Its manifest
-   (`keystroke-matching.json`) names the machine architecture, the fingerprint
-   of the engine source it was built from and the digest-pinned image it was
-   built in; the binary is used only while machine and fingerprint match the
-   running machine and the checked-out source. `bin/nixarchy-menu engine`
-   (`matching/engine/build-prebuilt.sh`) rebuilds it in that container after an
-   engine change, `tests/matching_engine_check.py` fails while it is stale, and
-   CI rebuilds and byte-compares it on every push and attests it on releases
-   ([docs/engine-provenance.md](../docs/engine-provenance.md)).
-2. `matching/engine`, the Rust source, built once per source revision with `cargo`
-   (`--locked`; about ten seconds and a dozen small crates: serde, serde_json,
-   unicode-normalization, unicode_categories) into the data directory when the
-   shipped binary does not apply (another architecture, or a modified engine).
-   Only the finished binary is kept.
-3. The Python runtime from `requirements.lock` (`uv`, hash-locked), running
-   `helpers/matching-worker.py`. Same protocol, same results.
+- `matching-engine`: `matching/engine`, the Rust source, built by
+  `buildRustPackage` from its `Cargo.lock` (serde, serde_json,
+  unicode-normalization, unicode_categories). The binary is `keystroke-matching`.
+- `model-small` and `model-large`: the three files (`config.json`,
+  `tokenizer.json`, `model.safetensors`) of potion-base-2M and potion-base-8M at
+  the pinned revisions below, fetched by `fetchurl` against fixed SHA-256 digests.
+- `plugin`: when Nix builds the plugin it substitutes the engine and both model
+  store paths into `matching/Session.qml`, which runs
+  `keystroke-matching --model-dir <model> --model <small|large>` directly. A raw
+  checkout that was not built by Nix keeps the `@…@` placeholders, so the engine
+  fails to start ("Matching helper stopped") and ordinary search keeps working.
+
+The protocol is unchanged: the engine prints `{"type":"ready"}` once the model is
+loaded, then answers each request line with a `result` or an `error`. It exits 2
+on bad arguments and 1, after an `error` line, when the model cannot be loaded.
+
+Testing: `nix flake check` runs the `engine` check. By hand, with the Nix outputs:
+
+    python3 tests/matching_engine_check.py \
+      --engine "$(nix build --no-link --print-out-paths .#matching-engine)/bin/keystroke-matching" \
+      --model-dir "$(nix build --no-link --print-out-paths .#model-small)"
+
+It checks the protocol and startup errors, and token-for-token parity with
+Hugging Face `tokenizers` on a synthetic vocabulary and on the real model. Without
+the Python `tokenizers` package it prints SKIP for parity instead of failing.
 
 The engine is not a deep-learning framework: a Model2Vec model is one embedding
 row per vocabulary token, and a text's vector is the mean of its token rows. The
 engine implements the BERT WordPiece tokenizer as `tokenizers` performs it
 (BertNormalizer, BertPreTokenizer, greedy WordPiece; `[UNK]` dropped as Model2Vec
 does), reads the F32 table from the safetensors file and ranks by cosine.
-`tests/matching_engine_check.py` builds it and proves token-for-token parity with
-`tokenizers` on a synthetic vocabulary and, when installed, on the real one;
-scores agree with the Python worker to within 4e-7. Measured here: 600 KB binary,
-ready 18 ms after launch (about 60 ms through the start script), 16 MiB resident,
+Measured here: 600 KB binary, ready 18 ms after launch, 16 MiB resident,
 a 1,500-document catalog embedded in 5 ms, a query answered in under 0.1 ms.
-The Python worker measured 92 MiB resident and about 250 ms to ready.
 
-The engine, runtime and models live in
-`${XDG_DATA_HOME:-~/.local/share}/nixarchy-menu/matching/` (`engine/<source hash>/`,
-`runtime/`, `models/<name>/<revision>/`). Model revisions and digests are fixed in
-`helpers/matching-start.py`. Subsequent loading is local-only. No query or catalog
-text is sent to a remote inference service or saved by the worker. Nothing is
-downloaded except model files and, for a source build, the crates named in
-`Cargo.lock`; no code is generated or evaluated.
+The engine and models live in the Nix store; model revisions and digests are
+fixed in `flake.nix`. Loading is local-only. No query or catalog text is sent to a
+remote inference service or saved by the engine, and no code is generated or
+evaluated.
 
 A single JSON-lines worker keeps normalized static vectors in memory. Catalog
 updates reuse unchanged vectors and evict removed documents. Requests contain
@@ -88,8 +82,8 @@ providers can supply a live `catalog(ctx)` and their own `intentDescription`.
 The shipped map does not create or install its catalog's apps or hotkeys.
 
 The default ~8 MB 2M model has 64-dimensional vectors; the ~31 MB 8M model has
-256-dimensional vectors. The compiled engine holds the table as is (16 MiB resident
-with 2M); the Python runtime measured roughly 100/130 MiB peak process RSS. Neither
+256-dimensional vectors. The engine holds the table as is (16 MiB resident
+with 2M). Neither
 similarity nor a fixed threshold proves intent; this remains a suggestions system
 with explicit selection and existing confirmation rules.
 

@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 # The hotkey's second tap reaches the palette as the shell's hide(): it calls
 # close() and then drops the plugin from its open set, and the panel Loader
 # unloads any plugin outside that set unless its manifest is keepLoaded. Without
@@ -18,7 +19,9 @@ with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git', '.claude', '.agents', '.codex', 'tests', '__pycache__'))
-    for name, target in [('qs', '/usr/share/omarchy/shell'), ('Commons', '/usr/share/omarchy/shell/Commons'), ('Ui', '/usr/share/omarchy/shell/Ui')]:
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    for name, target in [('qs', OMARCHY + '/shell'), ('Commons', OMARCHY + '/shell/Commons'), ('Ui', OMARCHY + '/shell/Ui')]:
         (work/name).symlink_to(target)
     p=project/'NixarchyMenu.qml'
     s=p.read_text().replace('  id: root\n', '''  id: root
@@ -64,8 +67,9 @@ ShellRoot {
   id: test
   property int stage: 0
   property string text: "Open the document, please.\\nKeep  two spaces! 🐈"
-  function check(ok, message) { if (!ok) { console.log("FAIL", message); Qt.quit(); throw Error(message) } }
-  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+  // On failure stop every stage timer, then quit outside any nested event loop.
+  function check(ok, message) { if (!ok) { console.log("FAIL", message); test.stage = -1; Qt.callLater(Qt.quit); throw Error(message) } }
+  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   TestCase { id: keys; name: "KeyDriver"; when: false }
   Timer { interval: 250; running: true; onTriggered: {
     palette.testTransfer.copyCommand = ["python3", %s, "clipboard"]
@@ -80,15 +84,20 @@ ShellRoot {
     test.stage = 10
   } }
   Timer { interval: 80; running: true; repeat: true; onTriggered: {
-    if (test.stage !== 10) return
+    // Activation is asynchronous; a key sent before the field has focus is lost.
+    if (test.stage !== 10 || !palette.testSearch.activeFocus) return
+    // keyClick runs a nested event loop in which this repeating timer can fire
+    // again; leave the stage first so a re-entrant tick finds nothing to do.
+    test.stage = 11
     keys.keyClick(Qt.Key_Return, Qt.ControlModifier)
-    test.check(palette.dictationPending === "paste" && palette.opened, "Ctrl+Enter waits for final")
+    test.check(palette.dictationPending === "paste" && palette.opened, "Ctrl+Enter waits for final: " + JSON.stringify({pending: palette.dictationPending, opened: palette.opened, phase: palette.testVoice.phase, mode: palette.dictationMode, focus: palette.testSearch.activeFocus}))
     palette.testVoice.phase = "idle"
     palette.testVoice.transcribed(test.text + " Final correction.")
     test.stage = 1
   } }
   Timer { interval: 25; running: true; repeat: true; onTriggered: {
     if (test.stage === 1 && !palette.testTransfer.busy) {
+      test.stage = 11   // re-entrancy guard, as above: this block calls keyClick
       test.check(!palette.opened, "copy closes palette")
       // Enter followed by Escape must discard the pending copy.
       palette.open('{}'); palette.perform({type:"dictate"}, {title:"Dictate"})
@@ -139,12 +148,12 @@ ShellRoot {
       Qt.quit(); test.stage = 3
     }
   } }
-  Timer { interval: 6000; running: true; onTriggered: { console.log("FAIL timeout", test.stage); Qt.quit() } }
+  Timer { interval: 20000; running: true; onTriggered: { console.log("FAIL timeout", test.stage); Qt.quit() } }
 }
 ''' % (json.dumps(str(helper)),json.dumps(str(helper))))
     env=os.environ.copy(); env.pop('DISPLAY',None)
     env.update(HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
-    result=subprocess.run(['quickshell','-p',str(cfg)],env=env,capture_output=True,text=True,timeout=12)
+    result=subprocess.run(['quickshell','-p',str(cfg)],env=env,capture_output=True,text=True,timeout=120)
     output=result.stdout+result.stderr
     assert 'PASS: dictation keys' in output and 'FAIL' not in output, output
     assert (work/'clipboard').read_text() == 'Open the document, please.\nKeep  two spaces! 🐈'

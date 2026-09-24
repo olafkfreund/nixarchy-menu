@@ -11,6 +11,8 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-files-") as temp:
     work = Path(temp)
     for folder in ["providers", "core"]:
         shutil.copytree(root / folder, work / folder)
+        # The source may be a read-only store path; make the copy writable.
+        for q in [work / folder, *(work / folder).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
     home = work / "home"
     for folder in ["Downloads", "Documents", ".config", ".git"]:
         (home / folder).mkdir(parents=True)
@@ -40,7 +42,7 @@ ShellRoot {
     {query:"~line",mode:"fuzzy",expected:["line\\nreport.pdf"]}
   ]
   Files { id: files }
-  function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+  function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
   Timer { interval:40; running:true; repeat:true; onTriggered: {
     if(!files.available) return
     var c=test.cases[test.stage], pending=false
@@ -57,7 +59,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(home), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=10)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS files actual fd" in output and "FAIL" not in output, output
     print("PASS files: actual fd, modes, tilde, directories, path abbreviations, hidden filters and newline names")

@@ -6,7 +6,8 @@ Item {
   id: root
   enabled: false
   property string model: "small"
-  property var command: ["python3", Qt.resolvedUrl("../helpers/matching-start.py").toString().replace("file://", ""), "--model", model]
+  // Nix substitutes the store paths when it builds the plugin.
+  property var command: ["@matchingEngine@", "--model-dir", model === "large" ? "@modelLarge@" : "@modelSmall@", "--model", model]
   property bool ready: false
   property bool starting: false
   property bool stopping: false
@@ -123,7 +124,7 @@ Item {
   // The host already debounces keystrokes; this only folds a burst of
   // refreshes into one request. The helper answers in a few milliseconds.
   Timer { id: delay; interval: 10; onTriggered: root.sendLatest() }
-  Timer { id: startup; interval: 300000; onTriggered: root.fail("Matching setup timed out; check your connection and retry") }
+  Timer { id: startup; interval: 10000; onTriggered: root.fail("Smart Match did not start; retry in nixarchy-menu Settings") }
   Timer { id: response; interval: 5000; onTriggered: root.fail("Smart Match timed out; ordinary search is still available") }
   Timer { id: idle; interval: 120000; onTriggered: { if (root.busy) restart(); else root.unloadIdle() } }
   Component.onDestruction: shutdown()

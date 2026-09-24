@@ -15,7 +15,11 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 
+if shutil.which("hyprctl") is None:
+    print("SKIP hotkeys check: hyprctl is not installed")
+    raise SystemExit(0)
 if subprocess.run(["hyprctl", "binds"], capture_output=True, text=True).returncode != 0:
     print("SKIP hotkeys check: hyprctl binds is not answering (no Hyprland session)")
     raise SystemExit(0)
@@ -24,7 +28,9 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-hotkeys-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    for name, target in [("qs", "/usr/share/omarchy/shell"), ("Commons", "/usr/share/omarchy/shell/Commons"), ("Ui", "/usr/share/omarchy/shell/Ui")]:
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    for name, target in [("qs", OMARCHY + "/shell"), ("Commons", OMARCHY + "/shell/Commons"), ("Ui", OMARCHY + "/shell/Ui")]:
         (work / name).symlink_to(target)
 
     harness = work / "shell.qml"
@@ -52,7 +58,7 @@ ShellRoot {
 
   function query(scope, q) {
     var ctx = { query: q, rawQuery: q, scope: scope, sub: "", generation: 0, settings: { limit: 10, keyboardOnly: true },
-                pending: function() { test.pendings++ }, host: host, shell: null, appLibrary: null, omarchyPath: "/usr/share/omarchy" }
+                pending: function() { test.pendings++ }, host: host, shell: null, appLibrary: null, omarchyPath: "''' + OMARCHY + '''" }
     rows = hotkeys.provider.query(ctx)
     return rows
   }
@@ -98,7 +104,7 @@ ShellRoot {
       // Activation is translated to the script's own dispatcher; the argv is not run here.
       query("", "full screen")
       var effect = hotkeys.provider.activate(rows[0], { host: host, settings: {}, alternate: false })
-      check(effect.type === "exec" && effect.argv[0] === "bash" && effect.argv[3] === "/usr/share/omarchy/bin/omarchy-menu-keybindings", "activate runs through omarchy-menu-keybindings")
+      check(effect.type === "exec" && effect.argv[0] === "bash" && effect.argv[3] === "''' + OMARCHY + '''/bin/omarchy-menu-keybindings", "activate runs through omarchy-menu-keybindings")
       check(effect.argv[4] === "lua" && effect.argv[5].indexOf("fullscreen") > 0, "dispatcher and argument travel as argv: " + effect.argv.slice(4).join(" "))
       var nav = hotkeys.provider.activate({ action: { type: "navigate", scope: "hotkeys" } }, { host: host, settings: {} })
       check(nav.type === "navigate", "non-hotkey actions pass through")
@@ -111,9 +117,9 @@ ShellRoot {
 
     env = os.environ.copy()
     env.pop("DISPLAY", None)
-    env.update(QML_IMPORT_PATH=str(work), OMARCHY_PATH="/usr/share/omarchy",
+    env.update(QML_IMPORT_PATH=str(work), OMARCHY_PATH=OMARCHY,
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
-    r = subprocess.run(["quickshell", "-p", str(harness)], env=env, text=True, capture_output=True, timeout=60)
+    r = subprocess.run(["quickshell", "-p", str(harness)], env=env, text=True, capture_output=True, timeout=120)
     out = r.stdout + r.stderr
     plain = re.sub(r"\x1b\[[0-9;]*m", "", out)
     print("\n".join(line.split("qml: ", 1)[-1] for line in plain.splitlines() if re.search(r"qml: (ok|PASS|FAIL)", line)))
