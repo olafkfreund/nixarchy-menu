@@ -13,6 +13,10 @@ spec: spec/2026-09-24-10-follow-desktop-size.md
   - **Available area:** `availW/H` is the output minus the reserved edges
     minus `2·margin`.
   - **Width:** `min(availW, clamp(round(0.40·outW), baseW, 1.5·baseW))`.
+    For dmenu it is `min(availW, baseW)`, with `baseW = Style.space(dmenuWidth)`,
+    so a picker keeps the width its caller asked for. (Implementation note: the
+    spec's formula did not say how dmenu width is chosen, and growing it would
+    override the caller's `width`.)
   - **Height:** `min(availH, clamp(round(0.54·outH), baseH, 1.5·baseH))`.
     For dmenu it is `min(availH, dmenuContentH)`.
   - **Position:** `x` is centred in the available area. `y` is `0.38`, or

@@ -16,6 +16,7 @@ import "core/VoiceBindings.js" as VoiceBindings
 import "core/Intent.js" as Intent
 import "core/Patterns.js" as Patterns
 import "core/SmartMatch.js" as SmartMatch
+import "core/Geometry.js" as Geometry
 import "core/Motion.js" as Motion
 import "core/Commands.js" as Commands
 import "matching" as Matching
@@ -1258,13 +1259,16 @@ Item {
 
     BorderSurface {
       id: card
-      width: Math.min(root.dmenuActive ? Style.space(root.dmenuWidth) : Style.space(root.compact ? 640 : 760), panel.width - Style.gapsOut * 2)
-      height: root.dmenuActive
-        ? Math.min(root.headerHeight + (root.mode === "input" ? Style.space(12) : root.dmenuRowsHeight + Style.space(20)), panel.height - Style.gapsOut * 2)
-        : Math.min(Style.space(root.compact ? 540 : 580), panel.height - Style.gapsOut * 2)
-      anchors.horizontalCenter: parent.horizontalCenter
-      y: (root.dmenuActive ? Math.max(Style.gapsOut, Math.round((panel.height - height) / 2)) : Math.max(Style.gapsOut, Math.round((panel.height - height) * 0.38)))
-         + (root.windowSlides ? Math.round((1 - root.reveal) * Style.space(Motion.WINDOW_SLIDE_PX)) : 0)
+      // Sized from the output and kept clear of the bar (core/Geometry.js).
+      readonly property var rect: Geometry.cardRect(panel.width, panel.height,
+        root.shell && root.shell.bar ? root.shell.bar : { barHidden: false, barSize: Style.bar.sizeHorizontal, position: "top" },
+        root.dmenuActive ? Style.space(root.dmenuWidth) : Style.space(root.compact ? 640 : 760),
+        Style.space(root.compact ? 540 : 580), Style.space(16),
+        root.dmenuActive ? root.headerHeight + (root.mode === "input" ? Style.space(12) : root.dmenuRowsHeight + Style.space(20)) : -1)
+      x: rect.x
+      width: rect.width
+      height: rect.height
+      y: rect.y + (root.windowSlides ? Math.round((1 - root.reveal) * Style.space(Motion.WINDOW_SLIDE_PX)) : 0)
       opacity: root.reveal
       radius: Style.cornerRadius
       color: root.background

@@ -89,6 +89,7 @@ case "${1:-help}" in
     python3 "$ROOT/tests/palette_dmenu_check.py"
     python3 "$ROOT/tests/palette_route_check.py"
     python3 "$ROOT/tests/palette_motion_check.py"
+    python3 "$ROOT/tests/palette_geometry_check.py"
     engine="$(nix build --no-link --print-out-paths "$ROOT#matching-engine")"
     model="$(nix build --no-link --print-out-paths "$ROOT#model-small")"
     python3 "$ROOT/tests/matching_engine_check.py" --engine "$engine/bin/keystroke-matching" --model-dir "$model"
