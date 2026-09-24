@@ -18,6 +18,7 @@ TestCase {
                   source: "bundled", extensionId: "", enabled: true,
                   schemas: [
                       { key: "searchMode", type: "enum", label: "Search in the main palette", "default": "fuzzy", options: ["fuzzy", "literal", "prefix"],
+                        optionLabels: { fuzzy: "Fuzzy", literal: "Literal", prefix: "Starts with ~" },
                         description: "Type ~ for fuzzy file and folder search in any mode. Searches under your home folder." },
                       { key: "hidden", type: "boolean", label: "Include hidden entries", "default": false }
                   ],
@@ -47,7 +48,7 @@ TestCase {
             compare(rows[0].subtitle, "nixarchy-menu Settings › Files")
             compare(rows[0].action.type, "navigate")
             compare(rows[0].action.scope, "settings/files/searchMode")
-            compare(rows[0].accessory, "fuzzy")
+            compare(rows[0].accessory, "Fuzzy")
         }
     }
     function test_choices_are_reachable_and_selectable_from_anywhere() {
@@ -92,7 +93,7 @@ TestCase {
         compare(hello[1].action.scope, "extensions/hello")
         compare(SettingsTree.rows(t.nodes, "settings/hello", "manext").length, 0)   // "Manage extension" is list-only, never a search hit
         var options = SettingsTree.rows(t.nodes, "settings/files/searchMode", "").map(function(r) { return r.title + " " + r.icon })
-        compare(options, ["Fuzzy ✓", "Literal ○", "Prefix ○"])
+        compare(options, ["Fuzzy ✓", "Literal ○", "Starts with ~ ○"])
         verify(t.screens["settings/clipboard/limit"] !== undefined)
         compare(t.screens["settings/clipboard/limit"].value, 100)
         compare(t.screens["settings/files/searchMode"], undefined)
@@ -165,6 +166,13 @@ TestCase {
         compare(rows[0].action.url, "https://github.com/olafkfreund/nixarchy-menu#readme")
         compare(search("", "guide")[0].title, "Learn nixarchy-menu")
         compare(search("settings", "help")[0].title, "Learn nixarchy-menu")
+    }
+    function test_enum_option_labels_name_the_choice_and_the_current_value() {
+        var m = model()
+        m.entries.filter(function(e) { return e.key === "files" })[0].values.searchMode = "prefix"
+        var t = SettingsTree.build(m)
+        compare(titles(SettingsTree.rows(t.nodes, "settings/files/searchMode", "")), ["Fuzzy", "Literal", "Starts with ~"])
+        compare(SettingsTree.rows(t.nodes, "settings/files", "")[1].accessory, "Starts with ~")
     }
     function test_unrelated_queries_find_nothing() {
         compare(search("", "chrome").length, 0)
