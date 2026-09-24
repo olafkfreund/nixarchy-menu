@@ -82,6 +82,7 @@ ShellRoot {
  Timer { interval: 100; repeat: true; running: true; onTriggered: { if (test.busy) return; test.busy = true; try {
    switch (test.stage) {
    case 0:
+     if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
      if (!palette.registry.manifests["gif-search"]) return
      check(!palette.registry.services["gif-search"], "off by default")
      palette.applyConfigText(config(true)); test.stage++; return

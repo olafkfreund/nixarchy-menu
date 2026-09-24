@@ -59,3 +59,27 @@ spec: spec/2026-09-24-12-config-load-race.md
 
 ## Rollback
 Revert the commit. The harness gates are harmless on their own.
+
+## Deviation (step 4, agreed with the lead)
+Under the pinned stress (4 stress-ng workers and the harness on core 0 only),
+"all pass" is not reachable for two harnesses. Their fixed timings are too
+tight for that load, and those timings are not part of this fix.
+
+**Step 4's criterion is now:** no failure caused by the config race, meaning
+no timeout at the config-apply stage, and no harness doing worse than main
+under the same stress.
+
+| 5× under stress | this branch | origin/main (f6f3444) |
+|---|---|---|
+| gif-search | 4/5. The one failure is the debounce-vs-ticks flake below. | 0/5. Every run timed out at stage 1, the config race. |
+| translate | 1/5. The four failures all timed out at stage 10, the unload. | 0/5. Every run timed out at stage 1, the config race. |
+| url, extensions, browser-search, commands, route, motion, matching, shortcut, config-settle | 5/5 each | not run |
+
+**The timing flakes seen, both left as they are:**
+- **gif-search, debounce vs. ticks:** stage 5 calls `search("new")` after
+  four 100 ms ticks, but `search("slow")`'s 300 ms debounce may not have fired
+  yet on a starved core. `slow:0` is then never requested, and the check on
+  the request log fails. All the palette assertions passed.
+- **translate, stage-10 unload:** after `applyConfigText(config([]))`, the
+  service did not finish unloading before the 20 s guard. There were no
+  assertion failures.

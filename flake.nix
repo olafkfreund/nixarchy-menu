@@ -266,6 +266,7 @@
                 chmod 700 "$XDG_RUNTIME_DIR"
                 cd ${checkSrc}
                 for f in tests/palette_url_check.py \
+                         tests/palette_config_settle_check.py \
                          tests/palette_motion_check.py \
                          tests/palette_currency_check.py \
                          tests/palette_matching_check.py \

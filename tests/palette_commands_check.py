@@ -79,6 +79,7 @@ ShellRoot {
    if (test.capturing) return
    switch (test.stage) {
    case 0:
+     if (!palette.configSettled) return   // the on-disk load would undo applyConfigText
      if (!palette.registry.manifests["translate"] || !palette.registry.services["translate"] || !palette.registry.services["translate"].instance) return
      palette.open(JSON.stringify({ query: "" }))
      test.stage = 1; return

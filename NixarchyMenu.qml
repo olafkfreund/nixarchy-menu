@@ -115,6 +115,8 @@ Item {
   // -------------------------------------------------------------- settings
   property var config: Settings.empty()
   property string configError: ""
+  // True once the config on disk is applied (or can never load); saves before that would overwrite it.
+  property bool configSettled: false
   readonly property var paletteSchema: [
     { key: "density", type: "enum", label: "Layout density", "default": "compact", options: ["compact", "comfortable"], description: "Compact uses a narrower window and shorter rows" },
     { key: "accent", type: "enum", label: "Accent color", "default": "theme", options: ["theme", "ember", "violet", "mint"], description: "Theme follows the active Omarchy theme" },
@@ -254,6 +256,7 @@ Item {
     root.paletteSettings = Settings.values(root.config, ["palette"], root.paletteSchema)
   }
   function saveConfig(next) {
+    if (!root.configSettled) throw new Error("Settings are still loading")
     if (root.configError) throw new Error(root.configError)
     root.config = next
     root.paletteSettings = Settings.values(next, ["palette"], root.paletteSchema)
@@ -265,8 +268,8 @@ Item {
     watchChanges: true
     atomicWrites: true
     printErrors: false
-    onLoaded: root.applyConfigText(text())
-    onLoadFailed: root.applyConfigText("")
+    onLoaded: { root.applyConfigText(text()); root.configSettled = true }
+    onLoadFailed: { root.applyConfigText(""); root.configSettled = true }
     onFileChanged: reload()
   }
 
@@ -411,7 +414,12 @@ Item {
     id: migrateState
     command: ["sh", Qt.resolvedUrl("helpers/migrate-state.sh").toString().replace("file://", "")]
     running: true
-    onExited: function(code) { root.stateReady = code === 0; providerRegistry.scan() }
+    onExited: function(code) {
+      root.stateReady = code === 0
+      // No config path this session, so neither configFile callback fires: the defaults are the config.
+      if (code !== 0) root.configSettled = true
+      providerRegistry.scan()
+    }
   }
   function remember(row) {
     if (!row.remember) return
@@ -1194,7 +1202,7 @@ Item {
     else if (type === "copy") Quickshell.execDetached(["wl-copy", "--", String(effect.text === undefined ? "" : effect.text)])
     else if (type === "app" && root.appLibrary) root.appLibrary.launch(effect.id, effect.name)
     else if (type === "edit") {
-      if (!root.configError && root.stateReady) configFile.setText(Settings.serialize(root.config))
+      if (root.configSettled && !root.configError && root.stateReady) configFile.setText(Settings.serialize(root.config))
       Util.execArgv(["xdg-open", root.configPath])
     }
   }
