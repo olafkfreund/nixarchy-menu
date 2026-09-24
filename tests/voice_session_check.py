@@ -112,7 +112,7 @@ ShellRoot {
                XDG_RUNTIME_DIR=str(runtime), QT_QPA_PLATFORM="offscreen",
                QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
     run = subprocess.run(["quickshell", "-p", str(config)], env=env,
-                         capture_output=True, text=True, timeout=8)
+                         capture_output=True, text=True, timeout=120)
     output = run.stdout + run.stderr
     if run.returncode or "PASS: cancelled recording" not in output:
         raise SystemExit(output)

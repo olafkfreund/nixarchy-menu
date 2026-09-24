@@ -63,6 +63,7 @@ import "project"
 ShellRoot {
  id: test
  property int stage: 0
+ property bool busy: false   // a stage timer is mid-tick (see its guard)
  property int ticks: 0
  property int failures: 0
  property var svc: null
@@ -78,7 +79,7 @@ ShellRoot {
  function check(ok, message) { if (!ok) { failures++; console.log("FAIL", message) } }
  function config(enabled) { return JSON.stringify({version:1, matching:{mode:"off"}, providers:{"gif-search":{enabled:enabled, prefix:"reaction"}}}) }
  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
- Timer { interval: 100; repeat: true; running: true; onTriggered: {
+ Timer { interval: 100; repeat: true; running: true; onTriggered: { if (test.busy) return; test.busy = true; try {
    switch (test.stage) {
    case 0:
      if (!palette.registry.manifests["gif-search"]) return
@@ -194,7 +195,7 @@ ShellRoot {
      console.log(test.failures ? "FAIL palette gifs" : "PASS palette gifs")
      Qt.quit(); test.stage++; return
    }
- } }
+ } finally { test.busy = false } } }
  Timer { interval: 18000; running: true; onTriggered: { console.log("FAIL timeout", test.stage, JSON.stringify(palette.registry.problems)); Qt.quit() } }
 }
 ''')
@@ -202,7 +203,7 @@ ShellRoot {
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette gifs" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output and "Unable to assign" not in output, output

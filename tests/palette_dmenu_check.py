@@ -27,7 +27,7 @@ import "project"
 ShellRoot {
   id: test
   property real oneRowHeight: 0
-  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.quit(); throw Error(msg) } }
+  function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.callLater(Qt.quit); throw Error(msg) } }
   NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   Timer { interval: 250; running: true; onTriggered: {
     palette.open(JSON.stringify({ mode: "select", prompt: "Keybindings", options: ["Super + K → Keybindings"], width: 800, maxHeight: 500 }))
@@ -51,7 +51,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette dmenu" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

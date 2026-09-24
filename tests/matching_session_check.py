@@ -32,7 +32,7 @@ import "matching"
 ShellRoot {
  id: test
  property int stage: 0
- function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+ function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
  Session { id: session; enabled: true; command: ["python3", %s, %s, model] }
  Timer { interval: 25; repeat: true; running: true; onTriggered: {
    if(test.stage===0) { session.submit("old","old",[{id:"old",text:"old"}]); test.stage=1 }
@@ -70,7 +70,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software')
     env.pop('DISPLAY', None)
     env.pop('WAYLAND_DISPLAY', None)
-    result = subprocess.run(['quickshell','-p',str(work/'shell.qml')], env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(['quickshell','-p',str(work/'shell.qml')], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert result.returncode == 0 and 'PASS matching lifecycle' in output and 'FAIL' not in output, output
     assert 'TypeError' not in output and 'ReferenceError' not in output, output

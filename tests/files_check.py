@@ -42,7 +42,7 @@ ShellRoot {
     {query:"~line",mode:"fuzzy",expected:["line\\nreport.pdf"]}
   ]
   Files { id: files }
-  function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+  function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
   Timer { interval:40; running:true; repeat:true; onTriggered: {
     if(!files.available) return
     var c=test.cases[test.stage], pending=false
@@ -59,7 +59,7 @@ ShellRoot {
     env = dict(os.environ, HOME=str(home), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=10)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS files actual fd" in output and "FAIL" not in output, output
     print("PASS files: actual fd, modes, tilde, directories, path abbreviations, hidden filters and newline names")

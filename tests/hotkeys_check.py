@@ -119,7 +119,7 @@ ShellRoot {
     env.pop("DISPLAY", None)
     env.update(QML_IMPORT_PATH=str(work), OMARCHY_PATH=OMARCHY,
                QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="generic", QT_QUICK_BACKEND="software")
-    r = subprocess.run(["quickshell", "-p", str(harness)], env=env, text=True, capture_output=True, timeout=60)
+    r = subprocess.run(["quickshell", "-p", str(harness)], env=env, text=True, capture_output=True, timeout=120)
     out = r.stdout + r.stderr
     plain = re.sub(r"\x1b\[[0-9;]*m", "", out)
     print("\n".join(line.split("qml: ", 1)[-1] for line in plain.splitlines() if re.search(r"qml: (ok|PASS|FAIL)", line)))

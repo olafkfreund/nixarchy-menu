@@ -33,7 +33,7 @@ ShellRoot {
  property var rootRows: ["a","b","c","d"]
  property var steps: []
  property int step: 0
- function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+ function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.callLater(Qt.quit); throw Error(msg) } }
  function after(ms, fn) { steps.push({ms: ms, fn: fn}) }
  function next() { if (step >= steps.length) { console.log("PASS palette motion"); Qt.quit(); return } var s = steps[step++]; stepTimer.interval = s.ms; stepTimer.fn = s.fn; stepTimer.restart() }
  Timer { id: stepTimer; property var fn: null; onTriggered: { fn(); test.next() } }
@@ -183,7 +183,7 @@ ShellRoot {
     env=dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     env.pop('DISPLAY', None)
     env.pop('WAYLAND_DISPLAY', None)
-    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=25)
+    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=120)
     output=result.stdout+result.stderr
     if os.environ.get("MOTION_VERBOSE"): print(output)
     assert 'PASS palette motion' in output and 'FAIL' not in output, output

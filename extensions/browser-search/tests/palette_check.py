@@ -126,7 +126,7 @@ ShellRoot {
                QT_QUICK_BACKEND="software", QML_IMPORT_PATH=str(work))
     for key in ("DISPLAY", "WAYLAND_DISPLAY", "CHROME_CONFIG_HOME", "CHROME_USER_DATA_DIR", "XDG_CACHE_HOME", "XDG_STATE_HOME"):
         env.pop(key, None)
-    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=25)
+    result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env, capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS browser palette" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

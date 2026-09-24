@@ -40,7 +40,7 @@ ShellRoot {
  property bool targetVisible: true
  property string rawSeen: ""
  property string querySeen: ""
- function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
+ function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
  function configure(mode) { palette.applyConfigText(JSON.stringify({version:1,matching:{mode:mode,model:"small"}})) }
  function fixture() {
    palette.registry.entries = [{key:"fixture",source:"bundled",patterns:[],provider:{name:"Fixture",settings:[],
@@ -130,7 +130,7 @@ ShellRoot {
     env=dict(os.environ, HOME=str(work), XDG_RUNTIME_DIR=str(work), QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     env.pop('DISPLAY', None)
     env.pop('WAYLAND_DISPLAY', None)
-    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=15)
+    result=subprocess.run(['quickshell','-p',str(work/'shell.qml')],env=env,capture_output=True,text=True,timeout=120)
     output=result.stdout+result.stderr
     assert 'PASS palette matching modes' in output and 'FAIL' not in output, output
     assert 'TypeError' not in output and 'ReferenceError' not in output, output

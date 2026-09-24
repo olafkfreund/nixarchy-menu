@@ -151,7 +151,7 @@ ShellRoot {
     env.pop("DISPLAY", None)
     env.pop("WAYLAND_DISPLAY", None)
     result = subprocess.run(["quickshell", "-p", str(work / "shell.qml")], env=env,
-                            capture_output=True, text=True, timeout=30)
+                            capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert "PASS palette URL" in output and "FAIL" not in output, output
     assert "TypeError" not in output and "ReferenceError" not in output, output

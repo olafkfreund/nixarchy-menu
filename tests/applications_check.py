@@ -38,7 +38,7 @@ ShellRoot {
   property var manifestRows: [{manifest: {kinds: ["menu", "bar-widget"]}}]
   property bool convertedKinds: false
   function requery() { requeries++ }
-  function check(ok, message) { if (!ok) { console.log("FAIL", message); Qt.quit(); throw Error(message) } }
+  function check(ok, message) { if (!ok) { console.log("FAIL",message); test.stage = -1; Qt.callLater(Qt.quit); throw Error(message) } }
   // The 4.0.3 loader passes this converted manifest to manifestHasKind.
   Instantiator {
     model: test.manifestRows
@@ -109,7 +109,7 @@ ShellRoot {
                QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic',
                QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     result = subprocess.run(['quickshell', '-p', str(work / 'shell.qml')], env=env,
-                            capture_output=True, text=True, timeout=15)
+                            capture_output=True, text=True, timeout=120)
     output = result.stdout + result.stderr
     assert result.returncode == 0 and 'PASS applications:' in output and 'FAIL' not in output, output
     assert 'TypeError' not in output and 'ReferenceError' not in output, output

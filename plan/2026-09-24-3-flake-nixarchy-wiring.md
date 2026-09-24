@@ -246,3 +246,18 @@ Owns:
   - No provider problems.
 - **Large model:** switching to Large in the config gave Ready, with the engine on the `model-large` store path. Switching back to Small gave Ready. The config was restored byte-identical afterwards.
 - **Left installed for the user to test Smart Match**, as requested.
+
+### CI fix 1: quickshell harness re-entrancy (L)
+- **Symptom:** PR #11's first CI run failed `palette_dictation_check` with `TimeoutExpired` after 12 s on the GitHub runner. It passed on p620.
+- **Root cause:** a repeating timer called QtTest `keyClick`, which runs a nested event loop. Under load that loop outlasted the timer interval, so the same stage re-entered, ran to completion, and failed the outer tick's check. `check()` then called `Qt.quit()` inside the nested loop, which crashed quickshell. The crash handler kept the pipes open, so the process hung silently until the outer timeout. Any failed check could turn into a silent hang in the same way.
+- **Fix (test files only):**
+  - Stages move on before calling `keyClick`. A `busy` re-entrancy guard is added in the codex_session, palette_shortcut and gif-search harnesses.
+  - `check()` stops the stages and quits through `Qt.callLater` (11 harnesses).
+  - The dictation stage waits for search focus, and its QML guard goes from 6 s to 20 s.
+  - The outer subprocess timeouts go to 120 s as a hang backstop only. The QML guards remain the deadlines.
+- **Verified:**
+  - dictation under 1-core stress: 3/3 hung before, 7/7 pass after
+  - all 20 checks pinned to 4 cores with 4 pinned stressors: 20/20
+  - sandbox `--rebuild`: 20/20
+- **Out of scope:** a separate config-load ordering race under extreme contention (one core shared five ways) is filed as #12.
+- **Process:** L's first pressure run used stress-ng on all CPUs of p620, the user's desktop. The lead stopped it; later runs were pinned to 4 cores.

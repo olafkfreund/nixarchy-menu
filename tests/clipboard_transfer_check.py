@@ -53,7 +53,7 @@ ShellRoot {
         env = os.environ.copy()
         env.pop('DISPLAY', None)
         env.update(QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic', QT_QUICK_BACKEND='software')
-        result = subprocess.run(['quickshell', '-p', str(cfg)], env=env, capture_output=True, text=True, timeout=8)
+        result = subprocess.run(['quickshell', '-p', str(cfg)], env=env, capture_output=True, text=True, timeout=120)
         output = result.stdout + result.stderr
         assert not any(x in output for x in ['TIMEOUT', 'DUPLICATE', 'REJECTED', 'Failed to load']), output
         lines = [line.split() for line in events.read_text().splitlines()]
