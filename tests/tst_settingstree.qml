@@ -166,6 +166,16 @@ TestCase {
         compare(search("", "guide")[0].title, "Learn nixarchy-menu")
         compare(search("settings", "help")[0].title, "Learn nixarchy-menu")
     }
+    function test_enum_option_labels_name_the_choice_and_the_current_value() {
+        var m = model()
+        m.entries.push({ key: "files", name: "Files", description: "", icon: "", iconFont: "", color: "", source: "bundled", extensionId: "", enabled: true,
+            schemas: [{ key: "searchMode", type: "enum", label: "Search in the main palette", "default": "fuzzy", options: ["fuzzy", "literal", "prefix"],
+                        optionLabels: { fuzzy: "Fuzzy", literal: "Literal", prefix: "Only with ~" } }],
+            values: { searchMode: "prefix" } })
+        var t = SettingsTree.build(m)
+        compare(titles(SettingsTree.rows(t.nodes, "settings/files/searchMode", "")), ["Fuzzy", "Literal", "Only with ~"])
+        compare(SettingsTree.rows(t.nodes, "settings/files", "")[1].accessory, "Only with ~")
+    }
     function test_unrelated_queries_find_nothing() {
         compare(search("", "chrome").length, 0)
         compare(search("", "zzzz").length, 0)

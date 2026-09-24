@@ -33,7 +33,7 @@ Item {
     ],
     settings: [
       { key: "searchMode", type: "enum", label: "Search in the main palette", "default": "fuzzy",
-        options: ["fuzzy", "literal", "prefix"], optionLabels: ["Fuzzy", "Literal", "Only with ~"],
+        options: ["fuzzy", "literal", "prefix"], optionLabels: { fuzzy: "Fuzzy", literal: "Literal", prefix: "Only with ~" },
         description: "Type ~ for fuzzy file and folder search in any mode. Searches under your home folder." },
       { key: "files", type: "boolean", label: "Include files", "default": true },
       { key: "folders", type: "boolean", label: "Include folders", "default": true },

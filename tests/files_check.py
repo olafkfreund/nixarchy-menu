@@ -43,6 +43,10 @@ ShellRoot {
   ]
   Files { id: files }
   function check(ok,msg) { if(!ok) { console.log("FAIL",msg); test.stage = -1; Qt.callLater(Qt.quit); throw Error(msg) } }
+  Component.onCompleted: {
+    var mode=files.provider.settings.filter(s=>s.key==="searchMode")[0]
+    test.check(mode.optionLabels.prefix==="Only with ~","searchMode optionLabels is a map keyed by option")
+  }
   Timer { interval:40; running:true; repeat:true; onTriggered: {
     if(!files.available) return
     var c=test.cases[test.stage], pending=false
