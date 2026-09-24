@@ -39,13 +39,15 @@ There is no build step. The shell loads the QML files as they are.
 ## Verify before you claim it works
 
 ```sh
+nix develop                     # Qt, Quickshell, Python, jq, fd and shellcheck on PATH
+nix flake check                 # build the package and run the offline checks
 bin/nixarchy-menu validate      # omarchy plugin validate on the checkout
 bin/nixarchy-menu test          # qmltestrunner (tests/), integration checks, qmllint
 ```
 
-`tests/lint.sh` prints known noise from Quickshell metadata (`PanelWindow is not creatable`, `member not found on QObject` for `Style.font.*`/`Color.menu.*`); anything else is yours. Run the unit tests offscreen: `cd tests && QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input .`.
+`tests/lint.sh` prints known noise from Quickshell metadata (`PanelWindow is not creatable`, `member not found on QObject` for `Style.font.*`/`Color.menu.*`); anything else is yours. Run the unit tests offscreen: `cd tests && QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner -input .`.
 
-To see a change in the running shell: `bin/nixarchy-menu install` copies the checkout into `~/.config/omarchy/plugins/nixarchy.menu` (no symlinks) and enables it; because the plugin is `keepLoaded`, a code change usually needs `omarchy-restart-shell` afterwards. Drive it headlessly with `bin/nixarchy-menu open "<query>"` and `omarchy-shell shell call omarchy.menu inspect '{}'`, which prints the current rows, selection and state as JSON. Do not simulate key presses on the user's desktop as a test.
+To see a change in the running shell: `bin/nixarchy-menu install` builds the Nix package from the checkout, copies it into `~/.config/omarchy/plugins/nixarchy.menu` (no symlinks) and enables it; because the plugin is `keepLoaded`, a code change usually needs `omarchy-restart-shell` afterwards. Drive it headlessly with `bin/nixarchy-menu open "<query>"` and `omarchy-shell shell call omarchy.menu inspect '{}'`, which prints the current rows, selection and state as JSON. Do not simulate key presses on the user's desktop as a test.
 
 ## Build an extension
 
@@ -121,7 +123,7 @@ Most extensions need no setup. One that needs a local model, a compiled helper o
 "setup": { "run": "bin/setup", "summary": "Downloads the 40 MB model into ~/.local/share/nixarchy-menu/thing, verified by SHA-256" }
 ```
 
-The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest (see `helpers/matching-start.py`), never `curl | sh`, never `sudo`, write only under `~/.local/share/nixarchy-menu/<id>` or `~/.cache/nixarchy-menu/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
+The Extensions screen then shows **Run setup**: after a confirmation that quotes the summary, it opens a visible terminal and runs the script from your folder in front of the user, who reads its output and its exit status. Nothing else ever runs it. The script must be idempotent and honest: pin what it downloads and verify a digest (the way `flake.nix` pins the Smart Match models with `fetchurl` and a `sha256`), never `curl | sh`, never `sudo`, write only under `~/.local/share/nixarchy-menu/<id>` or `~/.cache/nixarchy-menu/<id>`, and say what it is doing. Your provider decides for itself whether setup has happened (does the file exist?) and, if not, returns one disabled row saying so instead of failing.
 
 ### 4. Test it
 

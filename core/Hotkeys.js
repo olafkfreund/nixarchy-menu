@@ -15,7 +15,7 @@
 
 var ARROW = " → "
 
-function script(omarchyPath) { return String(omarchyPath || "/usr/share/omarchy") + "/bin/omarchy-menu-keybindings" }
+function script(omarchyPath) { return String(omarchyPath || "/run/current-system/sw/share/omarchy") + "/bin/omarchy-menu-keybindings" }
 
 function loadArgv(omarchyPath) {
   return ["bash", "-lc", "source \"$0\" --print >/dev/null && output_binding_records", script(omarchyPath)]

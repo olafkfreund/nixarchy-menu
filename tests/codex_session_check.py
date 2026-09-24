@@ -2,11 +2,12 @@
 """Exercise production QML transport/session and view against a fake server."""
 import os,json,pathlib,tempfile,subprocess
 root=pathlib.Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-codex-test-') as temp:
  p=pathlib.Path(temp);(p/'.local/state/nixarchy-menu/questions').mkdir(parents=True)
- (p/'codex').symlink_to(root/'codex');(p/'qs').symlink_to('/usr/share/omarchy/shell')
+ (p/'codex').symlink_to(root/'codex');(p/'qs').symlink_to(OMARCHY + '/shell')
  for name in ['ui','voice']: (p/name).symlink_to(root/name)
- for name in ['Commons','Ui']: (p/name).symlink_to('/usr/share/omarchy/shell/'+name)
+ for name in ['Commons','Ui']: (p/name).symlink_to(OMARCHY + '/shell/'+name)
  (p/'shell.qml').write_text('''import QtQuick
 import QtTest
 import Quickshell
@@ -15,7 +16,9 @@ ShellRoot {
  id: test
  property int stage: 0
  function check(value,message) { if (!value) { console.log("FAIL",message); Qt.quit(); throw Error(message) } }
- CodexSession { id: session; host: QtObject { property bool stateReady: true }; home: %s; server.command: ["python3",%s] }
+ CodexSession { id: session; home: %s; server.command: ["python3",%s]
+   host: QtObject { property bool stateReady: true }
+ }
  Window { visible: true; width: 700; height: 580
    ConversationView { id: view; anchors.fill: parent; session: session; host: stub }
  }

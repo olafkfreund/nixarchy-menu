@@ -111,7 +111,7 @@ Item {
     }
     if (!req.enabled) { root.cancelWalk(); return rows }
     if (!root.available) {
-      if (ctx.scope || req.explicit) rows.push({ id: "missing", title: "fd is not installed", subtitle: "sudo pacman -S fd, then search again", icon: "󰈞",
+      if (ctx.scope || req.explicit) rows.push({ id: "missing", title: "fd is not installed", subtitle: "install fd, then search again", icon: "󰈞",
                                  section: "Files", verb: "", tier: "item", disabled: true, score: 1, action: { type: "noop" } })
       return rows
     }

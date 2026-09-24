@@ -207,3 +207,16 @@ Owns:
 - **Engine test coverage:** `matching_engine_check.py` also covers the startup exit codes (2 for bad arguments, 1 for an unloadable model) and one real-model ranking query.
 - **Parity must not skip:** `nix shell nixpkgs#python3Packages.tokenizers` does not make `tokenizers` importable, and parity would then SKIP silently. The engine check and the devShell use `python3.withPackages (p: [p.tokenizers])`, and the engine check fails on any `SKIP`.
 - **Leftover reference:** `matching/engine/src/main.rs:9` still mentions `matching-worker.py` in a doc comment. It is left unchanged because the engine tree stays byte-identical.
+
+### L: paths
+- **Pre-existing test failures fixed in L's files:**
+  - `catalog_check` still copied `omarchy/`, which #2 deleted.
+  - The browser-search palette check picked up the host's real default browser through `xdg-mime`. A fake `xdg-mime` stub now sits next to the fake `xdg-settings`.
+- **`codex_session_check`:** the harness QML failed to parse (`Unexpected token ';'`) because of the inline `host: QtObject {…}` stub added in #1. It now sits on its own line.
+- **Read-only sandbox source:** checks that `copytree` the repo then rewrite a copied file failed with PermissionError. Every `copytree` in L's checks is now followed by making the copy owner-writable, including `files_check` and `matching_session_check`.
+- **`palette_currency_check` was flaky under sandbox load.** A cached pass hid it; the lead's forced `--rebuild` exposed it. There were two harness races, both from Quickshell FileView's asynchronous writes:
+  - **Stage 3:** the fake curl's mode file sometimes lagged behind the fetch. The fake curl now answers by call count: the first call returns empty, later calls return the table.
+  - **Stage 5:** `rates.reload()` ran only once, possibly before the async write landed. It is now polled.
+  - No timeout was raised.
+  - **Verified:** 4 runs by L (one build plus 3 `--rebuild`) and 2 more `--rebuild` runs by the lead, each 20/20 PASS.
+- **README:** "Smart Match models" was dropped from the Keystroke-migration sentence, because models are no longer migrated.

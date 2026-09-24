@@ -7,15 +7,17 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-omarchy = Path(os.environ.get('OMARCHY_PATH', '/usr/share/omarchy'))
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-apps-') as temp:
     work = Path(temp)
     shutil.copytree(root / 'core', work / 'core')
+    # The source may be a read-only store path; make the copy writable.
+    for q in [work / 'core', *(work / 'core').rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
     (work / 'providers').mkdir()
     shutil.copy(root / 'providers/Applications.qml', work / 'providers')
     for name in ('Commons', 'services'):
-        (work / name).symlink_to(omarchy / 'shell' / name)
-    (work / 'qs').symlink_to(omarchy / 'shell')
+        (work / name).symlink_to(Path(OMARCHY) / "shell" / name)
+    (work / 'qs').symlink_to(Path(OMARCHY) / "shell")
     data = work / 'data'
     apps = data / 'applications'
     apps.mkdir(parents=True)
@@ -103,7 +105,7 @@ ShellRoot {
     for name in ('DISPLAY', 'WAYLAND_DISPLAY'):
         env.pop(name, None)
     env.update(HOME=str(work), XDG_RUNTIME_DIR=str(work), XDG_DATA_HOME=str(data),
-               XDG_DATA_DIRS=str(work / 'empty'), OMARCHY_PATH=str(omarchy),
+               XDG_DATA_DIRS=str(work / 'empty'), OMARCHY_PATH=OMARCHY,
                QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic',
                QT_QUICK_BACKEND='software', QML_IMPORT_PATH=str(work))
     result = subprocess.run(['quickshell', '-p', str(work / 'shell.qml')], env=env,

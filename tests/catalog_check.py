@@ -7,11 +7,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-catalog-') as temp:
     work=Path(temp)
-    for folder in ['providers','core','omarchy']:
+    for folder in ['providers','core']:
         shutil.copytree(root/folder,work/folder)
-    (work/'qs').symlink_to('/usr/share/omarchy/shell')
+        # The source may be a read-only store path; make the copy writable.
+        for q in [work/folder, *(work/folder).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work/'qs').symlink_to(OMARCHY + '/shell')
     (work/'shell.qml').write_text('''import QtQuick
 import Quickshell
 import "providers"

@@ -9,11 +9,14 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-browser-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text().replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
@@ -30,8 +33,10 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-browser-") as temp:
         {"type": "url", "name": "Fixture bookmark", "url": "https://example.org/bookmark"}]}}}))
     fake = work / "bin"
     fake.mkdir()
-    (fake / "xdg-settings").write_text('#!/bin/sh\nprintf "chromium.desktop\\n"\n')
-    (fake / "xdg-settings").chmod(0o755)
+    # search.py asks xdg-mime first; stub both so the host's default browser never leaks in.
+    for name in ("xdg-mime", "xdg-settings"):
+        (fake / name).write_text('#!/bin/sh\nprintf "chromium.desktop\\n"\n')
+        (fake / name).chmod(0o755)
     (work / "shell.qml").write_text('''import QtQuick
 import Quickshell
 import "project"
@@ -39,7 +44,7 @@ ShellRoot {
   id: test
   property int stage: 0
   property int failures: 0
-  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   function service() { var s = palette.registry.services["browser-search"]; return s ? s.instance : null }
   function check(ok, msg) { if (!ok) { failures++; console.log("FAIL", msg) } }
   function items() { return palette.rows.filter(function(r) { return r.providerKey === "browser-search" && !r.disabled }) }

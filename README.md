@@ -6,14 +6,18 @@ Plugin id `nixarchy.menu`. Requires Omarchy ≥ 4.0.2 (Quickshell 0.3, Qt 6.11).
 
 ## Enable on nixarchy
 
-From a checkout:
+Declaratively, through the nixarchy flake (opt-in, once [olafkfreund/nixarchy#946](https://github.com/olafkfreund/nixarchy/issues/946) lands):
 
-```sh
-bin/nixarchy-menu install     # copy to ~/.config/omarchy/plugins/nixarchy.menu (no symlinks), rescan, enable
-bin/nixarchy-menu uninstall   # disable, remove the copy, restore the stock menu
+```nix
+programs.nixarchy.defaultPlugins.menu = true;
 ```
 
-Declarative wiring through the nixarchy flake comes in #3; until then, use the script.
+Until then, or from a checkout:
+
+```sh
+bin/nixarchy-menu install     # build the Nix package, copy it to ~/.config/omarchy/plugins/nixarchy.menu, rescan, enable
+bin/nixarchy-menu uninstall   # disable, remove the copy, restore the stock menu
+```
 
 Enabling it makes it the menu: `Super+Space`, every `omarchy-menu` binding, `omarchy menu summon <route>`, and the `omarchy-menu-select`/`omarchy-menu-input` pickers all route to it. Disabling it (`omarchy plugin disable nixarchy.menu`) restores the stock menu. This works because the manifest declares `omarchy.clonedFrom: "omarchy.menu"`; Omarchy's plugin registry routes calls for `omarchy.menu` to the enabled replacement and restores the original afterwards.
 
@@ -24,7 +28,7 @@ omarchy plugin disable evindor.keystroke
 omarchy plugin enable nixarchy.menu left --index 0
 ```
 
-With both enabled, the old plugin keeps the menu; disabling the old one after enabling the new one brings the stock menu back. On first start nixarchy-menu copies your settings, usage history, extensions and Smart Match models from the old Keystroke paths; the old files are never changed.
+With both enabled, the old plugin keeps the menu; disabling the old one after enabling the new one brings the stock menu back. On first start nixarchy-menu copies your settings, usage history and extensions from the old Keystroke paths; the old files are never changed.
 
 ## Bar button
 
@@ -55,21 +59,17 @@ The bundled providers live in `providers/`: Omarchy menu, applications, open URL
 ## Smart Match
 
 Smart Match defaults to **Voice and text** with the small **2M** embedding model.
-The first matching query fetches the model (8 MB, pinned digest) and starts the
-compiled engine shipped with the plugin (a static x86_64 binary, rebuilt byte for
-byte and attested in CI, see [docs/engine-provenance.md](docs/engine-provenance.md);
-16 MiB resident, ready in tens of milliseconds). On another architecture `cargo` builds it once from
-the included source, and without a Rust toolchain Python 3 with `uv` installs the
-equivalent pinned runtime instead. Ordinary search remains available
-during setup; checkout installation prepares everything ahead of time. After
-setup, matching works offline.
+The engine (Rust, built from `matching/engine`) and both models (potion-base-2M and
+potion-base-8M, pinned by digest) ship with the Nix package: nothing is downloaded,
+and matching works offline from the first query. The engine uses about 16 MiB and is
+ready in tens of milliseconds.
 
 **Settings > Matching** contains:
 
 - **Smart match** — “Match queries using an embedding model”: **Off** (model
   unloaded), **Only voice**, or **Voice and text** (default).
-- **Matching model** — **Small (2M)** (default) or **Large (8M)**. Large downloads
-  once when first used; switching Off releases the model but keeps its files.
+- **Matching model** — **Small (2M)** (default) or **Large (8M)**. Switching Off
+  releases the model.
 
 Smart Match supplements exact and fuzzy search with action descriptions and local
 semantic suggestions. It keeps launch/install/remove and start/stop distinct,
@@ -78,11 +78,10 @@ absent. Spoken arithmetic such as “27 plus 90” becomes `27 + 90`; dictation 
 assistant prompts retain the original transcript. Results still require Enter and
 keep their existing confirmations. Ambiguous speech can still need correction.
 
-Both models run locally on CPU. The runtime unloads after two idle minutes, and a
-setup failure leaves ordinary matching available. Use **Retry Smart Match** in the
-Matching settings screen or `bin/nixarchy-menu matching` to retry installation. Runtime
-files live under `~/.local/share/nixarchy-menu/matching` (or `XDG_DATA_HOME`). More detail
-is in [the matching runtime documentation](matching/README.md).
+Both models run locally on CPU. The engine unloads after two idle minutes, and a
+start failure leaves ordinary matching available; use **Retry Smart Match** in the
+Matching settings screen to start it again. More detail is in
+[the matching runtime documentation](matching/README.md).
 
 ## Voice
 
@@ -129,15 +128,10 @@ One file, hand-editable and hot-reloaded: `~/.config/omarchy/nixarchy-menu.json`
 ## Develop and test
 
 ```sh
+nix develop                    # Qt, Quickshell, Python, jq, fd and shellcheck on PATH
+nix flake check                # build the package and run the offline checks
 bin/nixarchy-menu validate     # omarchy plugin validate
-bin/nixarchy-menu test         # the full suite (expects Qt under /usr/lib/qt6)
-```
-
-On nixarchy, run the QML unit tests and the state-migration check directly:
-
-```sh
-cd tests && nix shell nixpkgs#qt6.qtdeclarative nixpkgs#qt6.qtbase -c env QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner -silent -input .
-python3 tests/migrate_state_check.py
+bin/nixarchy-menu test         # the full suite, inside nix develop
 ```
 
 [docs/architecture.md](docs/architecture.md) describes the design; [CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide.

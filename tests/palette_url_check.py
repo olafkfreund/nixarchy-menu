@@ -5,16 +5,20 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-url-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(
         ".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text().replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
@@ -24,13 +28,13 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-url-") as temp:
     fake.mkdir()
     # Util.execArgv uses bash -lc with positional arguments. Capture that
     # boundary so we also verify URL punctuation never becomes shell code.
-    (fake / "bash").write_text('''#!/usr/bin/python3
+    (fake / "bash").write_text("#!" + sys.executable + '''
 import json, os, sys
 if len(sys.argv) > 4 and sys.argv[4] == "xdg-open":
     with open(os.environ["URL_LAUNCH_LOG"], "a") as out:
         out.write(json.dumps(sys.argv[1:]) + "\\n")
 else:
-    os.execv("/bin/bash", ["bash"] + sys.argv[1:])
+    os.execv(''' + repr(shutil.which("bash")) + ''', ["bash"] + sys.argv[1:])
 ''')
     (fake / "bash").chmod(0o755)
     (fake / "wl-paste").write_text("#!/bin/sh\nexit 1\n")
@@ -58,7 +62,7 @@ ShellRoot {
    var r = palette.rows[0]
    check(r && r.providerKey === "open-url" && r.tier === "answer" && r.action.url === url, "URL ranks first: " + url)
  }
- NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    switch (test.stage) {
    case 0:

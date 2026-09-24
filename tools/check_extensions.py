@@ -23,7 +23,6 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 RESERVED = {"palette", "dmenu", "matching", "voice"}
-QT_BIN = Path("/usr/lib/qt6/bin")
 
 
 def bundled_ids():
@@ -37,13 +36,6 @@ def bundled_ids():
 
 def inside(rel):
     return rel and not rel.startswith("/") and ".." not in rel.split("/") and "" not in rel.split("/")
-
-
-def tool(name):
-    candidate = QT_BIN / name
-    if candidate.exists():
-        return str(candidate)
-    return shutil.which(name)
 
 
 def check(folder, qt_mode, reserved):
@@ -128,8 +120,8 @@ def check(folder, qt_mode, reserved):
                 if target != folder and folder not in target.parents:
                     fail(f"{rel} imports from outside the folder: {line.strip()}")
     qml_files = [p for p in folder.rglob("*.qml") if "tests" not in p.relative_to(folder).parts]
-    qmllint = tool("qmllint")
-    runner = tool("qmltestrunner")
+    qmllint = shutil.which("qmllint")
+    runner = shutil.which("qmltestrunner")
     if qt_mode == "required" and not (qmllint and runner):
         fail("qmllint and qmltestrunner are required (pass --qt auto to skip when absent)")
     if qmllint and qml_files:
@@ -138,7 +130,7 @@ def check(folder, qt_mode, reserved):
             if shell.is_dir():
                 (Path(shim) / "qs").symlink_to(shell)
             for qml in qml_files:
-                r = subprocess.run([qmllint, "-I", "/usr/lib/qt6/qml", "-I", shim, str(qml)], capture_output=True, text=True)
+                r = subprocess.run([qmllint, "-I", shim, str(qml)], capture_output=True, text=True)
                 # Quickshell's metadata warnings are known noise; errors are not.
                 if r.returncode != 0 and re.search(r"(?m)^.*(error|Error):", r.stdout + r.stderr):
                     fail(f"qmllint {qml.relative_to(folder)}: {(r.stdout + r.stderr).strip()[:400]}")
@@ -173,7 +165,7 @@ def main():
                 print("  - " + p.replace("\n", "\n    "))
         else:
             print(f"ok   {folder.name}")
-    if not (tool("qmllint") and tool("qmltestrunner")):
+    if not (shutil.which("qmllint") and shutil.which("qmltestrunner")):
         print("note: Qt tools not found; QML lint and tests were skipped")
     return 1 if failed else 0
 

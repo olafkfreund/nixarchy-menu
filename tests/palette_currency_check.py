@@ -2,7 +2,7 @@
 """The Currency extension fetches its table on demand, offscreen, with a fake curl.
 
 A copy of the project and a fake HOME with the extension turned on. `curl` on
-PATH is a script that logs every call and answers what a mode file says: first
+PATH is a script that logs every call and answers by call count: first
 an empty body with exit 0 (a failure the service must record, then wait
 RETRY_MS before trying again rather than downloading on every query), then a
 real Frankfurter table. The palette is driven through NixarchyMenu.qml itself.
@@ -15,12 +15,15 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 
 with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-currency-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
-    (work / "qs").symlink_to("/usr/share/omarchy/shell")
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    (work / "qs").symlink_to(OMARCHY + "/shell")
     source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
@@ -33,17 +36,16 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-currency-") as te
     fake = work / "bin"
     fake.mkdir()
     log = work / "curl.log"
-    mode = work / "curl.mode"
     table = [{"base": "EUR", "quote": q, "rate": r, "date": "2026-09-10"} for q, r in
              [("USD", 1.2), ("GBP", 0.8), ("TRY", 60), ("JPY", 170), ("CHF", 0.95), ("CAD", 1.6), ("AUD", 1.8), ("SEK", 11), ("NOK", 11.5), ("DKK", 7.46), ("PLN", 4.3)]]
     (work / "table.json").write_text(json.dumps(table))
-    mode.write_text("empty")
+    # The first call answers an empty body, every later one the table. Decided
+    # here rather than by a file the QML writes: FileView.setText is async, so
+    # a fetch could start before the switch landed and see "empty" again.
     (fake / "curl").write_text(f'''#!/bin/sh
 echo "$@" >> "{log}"
-case "$(cat "{mode}")" in
-  empty) exit 0 ;;
-  table) cat "{work / 'table.json'}" ;;
-esac
+[ "$(wc -l < "{log}")" -gt 1 ] && cat "{work / 'table.json'}"
+exit 0
 ''')
     (fake / "curl").chmod(0o755)
 
@@ -60,9 +62,8 @@ ShellRoot {
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function service() { var s = palette.registry.services["currency"]; return s ? s.instance : null }
  function curlCalls() { return String(curlLog.text()).split("\\n").filter(function(l) { return l.trim() }).length }
- NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
  FileView { id: curlLog; path: "''' + str(log) + '''"; printErrors: false }
- FileView { id: curlMode; path: "''' + str(mode) + '''"; printErrors: false }
  FileView { id: rates; path: "''' + str(work / ".cache/nixarchy-menu/currency/rates.json") + '''"; printErrors: false }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    curlLog.reload()
@@ -83,7 +84,6 @@ ShellRoot {
      if (palette.pending || service().fetching) return
      test.check(curlCalls() === 1, "another query within RETRY_MS does not run curl again: " + curlCalls())
      test.check(row("Exchange rates unavailable") !== null, "still the status row: " + titles().join(" | "))
-     curlMode.setText("table")
      service().failedAt = 1        // RETRY_MS has passed
      palette.setQuery("100 usd to try")
      test.stage = 3; return
@@ -104,7 +104,8 @@ ShellRoot {
      test.stage = 5; return
    case 5:
      var text = String(rates.text())
-     if (!text) return
+     // The service writes the cache asynchronously; poll until it lands.
+     if (!text) { rates.reload(); return }
      var cache = JSON.parse(text)
      test.check(cache.version === 1 && cache.base === "EUR" && cache.rates.TRY.rate === 60, "the table landed in ~/.cache/nixarchy-menu/currency/rates.json")
      console.log(test.failures ? "FAIL palette currency" : "PASS palette currency")

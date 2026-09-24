@@ -11,6 +11,8 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-files-") as temp:
     work = Path(temp)
     for folder in ["providers", "core"]:
         shutil.copytree(root / folder, work / folder)
+        # The source may be a read-only store path; make the copy writable.
+        for q in [work / folder, *(work / folder).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
     home = work / "home"
     for folder in ["Downloads", "Documents", ".config", ".git"]:
         (home / folder).mkdir(parents=True)

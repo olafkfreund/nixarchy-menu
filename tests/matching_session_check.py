@@ -11,6 +11,8 @@ root = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(prefix='nixarchy-menu-matching-session-') as temp:
     work = Path(temp)
     shutil.copytree(root / 'matching', work / 'matching')
+    # The source may be a read-only store path; make the copy writable.
+    for q in [work / 'matching', *(work / 'matching').rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
     fake = work / 'worker.py'
     log = work / 'workers'
     fake.write_text('''import json,os,sys,time

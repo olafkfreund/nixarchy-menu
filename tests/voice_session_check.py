@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
@@ -21,7 +22,7 @@ with tempfile.TemporaryDirectory(prefix="nixarchy-menu-session-") as work:
     original_config = '# user-owned sentinel\nengine = "whisper"\n[output]\nmode = "clipboard"\n'
     voxtype_config.write_text(original_config)
     mock = directory / "voxtype"
-    mock.write_text('''#!/usr/bin/python3
+    mock.write_text("#!" + sys.executable + '''
 import json, pathlib, sys, time
 counter = pathlib.Path(__file__).with_name("takes")
 args = sys.argv[1:]

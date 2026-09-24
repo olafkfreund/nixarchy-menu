@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+OMARCHY = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
 # The hotkey's second tap reaches the palette as the shell's hide(): it calls
 # close() and then drops the plugin from its open set, and the panel Loader
 # unloads any plugin outside that set unless its manifest is keepLoaded. Without
@@ -18,7 +19,9 @@ with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git', '.claude', '.agents', '.codex', 'tests', '__pycache__'))
-    for name, target in [('qs', '/usr/share/omarchy/shell'), ('Commons', '/usr/share/omarchy/shell/Commons'), ('Ui', '/usr/share/omarchy/shell/Ui')]:
+    # The source may be a read-only store path; make the copy writable.
+    for q in [project, *(project).rglob("*")]: q.chmod(q.stat().st_mode | 0o200)
+    for name, target in [('qs', OMARCHY + '/shell'), ('Commons', OMARCHY + '/shell/Commons'), ('Ui', OMARCHY + '/shell/Ui')]:
         (work/name).symlink_to(target)
     p=project/'NixarchyMenu.qml'
     s=p.read_text().replace('  id: root\n', '''  id: root
@@ -65,7 +68,7 @@ ShellRoot {
   property int stage: 0
   property string text: "Open the document, please.\\nKeep  two spaces! 🐈"
   function check(ok, message) { if (!ok) { console.log("FAIL", message); Qt.quit(); throw Error(message) } }
-  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "''' + OMARCHY + '''" }
   TestCase { id: keys; name: "KeyDriver"; when: false }
   Timer { interval: 250; running: true; onTriggered: {
     palette.testTransfer.copyCommand = ["python3", %s, "clipboard"]
