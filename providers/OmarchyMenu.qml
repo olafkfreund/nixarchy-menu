@@ -306,6 +306,16 @@ Item {
     return hit
   }
 
+  // Menu actions that start the default agent, which runs with automatic
+  // approval (#4), so they ask first. Explicit on purpose: a new
+  // agent-launching command must be added here, or it runs without asking.
+  //   - `nixarchy-ask` anywhere as a command word (Ask topics, nixarchy#961)
+  //   - a command starting with omarchy-agent or omarchy-agent-prompt
+  readonly property var agentActionPatterns: [/(^|[\s;&|(`])nixarchy-ask(?=$|[\s;&|)`])/, /^\s*omarchy-agent(-prompt)?(\s|$)/]
+  function launchesAgent(command) {
+    return root.agentActionPatterns.some(function(re) { return re.test(String(command || "")) })
+  }
+
   function rowFor(entry, subtitle, score, confirmDestructive) {
     var action, verb
     if (entry.kind === "action") {
@@ -319,6 +329,9 @@ Item {
       action = { type: "navigate", scope: "omarchy/" + target, title: entry.title || entry.label }
       verb = "Open"
     }
+    // The destructive confirm wins when both apply.
+    var destructive = entry.kind === "action" && confirmDestructive && root.isDestructive(entry.id)
+    var agent = !destructive && entry.kind === "action" && root.launchesAgent(entry.action)
     return {
       id: entry.id, title: entry.label, subtitle: subtitle || "", icon: entry.icon || "\udb82\udcc7", iconFont: entry.iconFont || "",
       section: "Omarchy", verb: verb, tier: "item", score: score, order: entry.order,
@@ -326,18 +339,25 @@ Item {
       remember: true, action: action, previewDetail: root.searchInfo(entry.id).path,
       path: root.searchInfo(entry.id).path, keywords: root.searchInfo(entry.id).keywords, description: entry.description,
       descriptionKey: [entry.action, entry.target, entry.provider].join("\u001f"),
-      confirm: entry.kind === "action" && confirmDestructive && root.isDestructive(entry.id) ? "Run “" + entry.label + "”?" : ""
+      confirm: destructive ? "Run “" + entry.label + "”?" : agent ? "Ask your default agent?" : "",
+      confirmDetail: agent ? entry.label + "\n\nThe agent starts with automatic approval and can run commands without asking." : "",
+      confirmText: agent ? "Ask" : ""
     }
   }
 
-  function catalogVisible(entry, depth) {
-    if (!entry || (depth || 0) >= 32) return false
+  // The entry and every ancestor with a `when` must have resolved true, and
+  // the chain must reach the top within 32 levels. Unresolved counts as hidden.
+  function ancestorsVisible(entry) {
     var current = entry, visited = 0
     while (current && visited++ < 32) {
       if (current.when && root.whenResults[current.id] !== true) return false
       current = root.item(current.parent)
     }
-    if (current) return false
+    return !current
+  }
+
+  function catalogVisible(entry, depth) {
+    if (!entry || (depth || 0) >= 32 || !root.ancestorsVisible(entry)) return false
     if (entry.kind === "action" || entry.provider) return true
     var target = entry.kind === "link" ? entry.target : entry.id
     for (var i = 0; i < root.itemOrder.length; i++) {
@@ -389,7 +409,8 @@ Item {
       entry = root.item(root.itemOrder[i])
       if (!entry || entry.id === "root") continue
       if (active !== "root" && !MenuModel.isDescendantOf(root.items, entry.id, active)) continue
-      if (!root.isVisible(entry)) continue
+      // A leaf under a hidden folder (say Ask, with no default agent) stays hidden.
+      if (!root.isVisible(entry) || !root.ancestorsVisible(entry)) continue
       // Fuzzy over the label, the breadcrumb below this menu ("sysshut" →
       // System › Shutdown) and the aliases; the description by whole word.
       var rel = root.relativeTo(entry.id, active)

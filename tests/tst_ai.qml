@@ -66,6 +66,12 @@ TestCase {
         compare(fallback.actions[0], { type: "copy", text: "how do I x?" })
         compare(fallback.actions[1].argv, ["nixi"])
     }
+    function test_lone_question_mark_opens_nixi() {
+        var r = Ai.openNixiRow()
+        compare(r.title, "Ask Nixi")
+        compare(r.subtitle, "Open Nixi")
+        compare(r.action, { type: "exec", argv: ["nixi"] })
+    }
     function test_google_url() {
         compare(Ai.googleUrl("two words"), "https://www.google.com/search?q=two+words")
     }
