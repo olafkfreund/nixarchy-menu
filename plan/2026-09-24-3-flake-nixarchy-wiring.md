@@ -220,3 +220,18 @@ Owns:
   - No timeout was raised.
   - **Verified:** 4 runs by L (one build plus 3 `--rebuild`) and 2 more `--rebuild` runs by the lead, each 20/20 PASS.
 - **README:** "Smart Match models" was dropped from the Keystroke-migration sentence, because models are no longer migrated.
+
+### J: flake
+- **nixpkgs pin:** pinned to nixarchy's exact revision `e554fab7` (rustc 1.98.1, quickshell 0.3.1).
+- **Sizes:** engine 728K, model-small 7.9M, model-large 30M, plugin 1016K.
+- **Extra environment the sandbox checks needed:**
+  - `quickshell` needs `XDG_RUNTIME_DIR`, otherwise it hangs indefinitely.
+  - `quickshell` and `qml-unit` need `QML2_IMPORT_PATH` and `QT_PLUGIN_PATH` for offscreen QtQuick.Window.
+  - `fd` is required by `files_check`.
+  - `ripgrep` is in `lint` and the devShell, for `lint.sh`.
+- **Quickshell check list:** it runs an explicit list of 20 files, including `clipboard_transfer_check` and `files_check`, which need only temp state.
+- **Commit attribution:** `engine.yml`'s deletion (J) landed in commit `9b6717d` (L) because it was already staged when L was committed. There is no content difference.
+
+### Lead: verification note
+- **Cache:** `nix flake check` served every check from cache on the first integration run, and the log showed no test output. Forced `nix build --rebuild -L` on `quickshell` and `engine` is what exposed the flaky currency check.
+- **CI:** CI builds from scratch, so a flaky check would have failed there at random.
