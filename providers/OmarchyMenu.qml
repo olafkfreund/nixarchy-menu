@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Commons
-import "../omarchy/MenuModel.js" as MenuModel
+import "file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js" as MenuModel
 import "../core/Match.js" as Match
 
 // The complete Omarchy menu as a Keystroke provider. Parsing, merging, routes,

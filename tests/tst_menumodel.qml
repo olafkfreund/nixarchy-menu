@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../omarchy/MenuModel.js" as MenuModel
+import "file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js" as MenuModel
 
 TestCase {
     name: "MenuModel"

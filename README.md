@@ -2,13 +2,7 @@
 
 A Raycast-style command palette that **replaces the Omarchy menu**. One native Omarchy `menu` plugin in QML and JavaScript, running inside the existing `omarchy-shell` process, themed by whatever Omarchy theme is active. Type, or speak, what you want: apps, the whole Omarchy menu, calculations, conversions, colors, emoji, clipboard history, files, Codex, and anything an extension adds. Smart Match, a small embedding model running locally, understands what you mean when the words do not match exactly.
 
-<p align="center"><a href="https://evindor.github.io/keystroke/"><img src="site/assets/social-card.png" alt="Keystroke: Raycast-style power for Omarchy" width="960"></a></p>
-
 **[Explore the feature showcase and installation guide →](https://evindor.github.io/keystroke/)** · **[Read the usage guide: every feature, with a screenshot and one thing to try →](https://evindor.github.io/keystroke/guide/)**
-
-[Release notes: 1.4.4](docs/releases/v1.4.4.md) — a quieter results list: the keys for the selection live in the footer, the preview pane opens only when it has something to show, and confirmations rise from the bottom of the card. [1.4.3](docs/releases/v1.4.3.md): a web address typed into the palette opens in your browser; Browser search and GIF Search join the box; Keyboard Cleaner keeps a wipe from opening the power menu. [1.4.2](docs/releases/v1.4.2.md): the matching engine is rebuilt byte for byte and attested in CI; Currency and Keyboard Cleaner. [1.4.1](docs/releases/v1.4.1.md): the usage guide reads like a manual. [1.4.0](docs/releases/v1.4.0.md): extensions ship inside Keystroke, off until you turn them on, with Timer (now ringing and counting down in the bar) and Translate in the box; every typed command explains itself; a usage guide, reachable from Settings → Learn Keystroke. Earlier: [1.3.0](docs/releases/v1.3.0.md), [1.2.1](docs/releases/v1.2.1.md), [1.2.0](docs/releases/v1.2.0.md).
-
-Screenshots show the real Omarchy interface with public demo data, rendered offscreen from the real palette by `tools/showcase/offscreen.py`.
 
 ## Install
 
@@ -20,6 +14,12 @@ That is all. Enabling Keystroke makes it the menu: `Super+Space`, every `omarchy
 
 From a checkout, `bin/keystroke install` copies the tree into `~/.config/omarchy/plugins/evindor.keystroke` (no symlinks) and enables it; `bin/keystroke uninstall` reverses that.
 
+**Bar-widget note (Omarchy 4.0.x).** Keystroke also ships the menu button as a bar widget, so enabling it puts a button in your bar: in place of the stock one if you had it, otherwise first on the left when enabled through `bin/keystroke install`. `omarchy plugin add --enable` only asks for a section and places the button after the workspaces; `omarchy bar move evindor.keystroke left --index 0` puts it first. For a third-party plugin, "enabled" means "referenced in shell.json", so removing that button from the bar also disables the menu. If you do not want the button, keep the plugin listed under `plugins[]` in `~/.config/omarchy/shell.json` instead.
+
+Requires Omarchy ≥ 4.0.2 (Quickshell 0.3, Qt 6.11). Like every Omarchy plugin, Keystroke runs unsandboxed inside your shell with your permissions; the code is here to read.
+
+## What it does
+
 Smart Match defaults to **Voice and text** with the small **2M** embedding model.
 The first matching query fetches the model (8 MB, pinned digest) and starts the
 compiled engine shipped with the plugin (a static x86_64 binary, rebuilt byte for
@@ -29,23 +29,6 @@ the included source, and without a Rust toolchain Python 3 with `uv` installs th
 equivalent pinned runtime instead. Ordinary search remains available
 during setup; checkout installation prepares everything ahead of time. After
 setup, matching works offline.
-
-**Bar-widget note (Omarchy 4.0.x).** Keystroke also ships the menu button as a bar widget, so enabling it puts a button in your bar: in place of the stock one if you had it, otherwise first on the left when enabled through `bin/keystroke install`. `omarchy plugin add --enable` only asks for a section and places the button after the workspaces; `omarchy bar move evindor.keystroke left --index 0` puts it first. For a third-party plugin, "enabled" means "referenced in shell.json", so removing that button from the bar also disables the menu. If you do not want the button, keep the plugin listed under `plugins[]` in `~/.config/omarchy/shell.json` instead.
-
-Requires Omarchy ≥ 4.0.2 (Quickshell 0.3, Qt 6.11). Like every Omarchy plugin, Keystroke runs unsandboxed inside your shell with your permissions; the code is here to read.
-
-## What it does
-
-<table>
-<tr>
-<td><img src="site/assets/screenshots/calculator.png" alt="Calculator answer" width="360"></td>
-<td><img src="site/assets/screenshots/converter.png" alt="Unit conversion" width="360"></td>
-</tr>
-<tr>
-<td><img src="site/assets/screenshots/fuzzy.png" alt="Fuzzy search into settings" width="360"></td>
-<td><img src="site/assets/screenshots/extensions.png" alt="Extensions screen" width="360"></td>
-</tr>
-</table>
 
 - **Type anything**: apps, Omarchy commands, `sqrt(144) + 15% of 80`, `2m in feet`, `32 F to C`, `10am pt`, `10 am in London`, `now in tokyo`, `#ff6644`, `:smile`, `readme`, `timer 10m tea`, `tr bonjour`.
 - **Commands explain themselves.** Type a prefix such as `tr`, `timer` or `:` and the line under the search field names the action and the argument you are on (*Translate · to: a language code or name*), while the arguments still to type appear after the caret as `[to] <text>` and vanish as you fill them. Type the name instead (`transl`) and `Tab` types the prefix for you; while you type, `Tab` moves to the next argument. `/` lists every command with its usage; each extension's screen starts with the same usage and examples you can run with `↵`. Every prefix can be renamed in the provider's settings.
@@ -61,6 +44,23 @@ Requires Omarchy ≥ 4.0.2 (Quickshell 0.3, Qt 6.11). Like every Omarchy plugin,
 - **Frecency and learned preferences.** Selections of apps, Omarchy commands and hotkeys earn a bounded bonus (14-day half-life), and choosing a result for a query lifts that result the next time the same query is typed or spoken in the same scope. State lives in `~/.local/state/keystroke/usage.json` as hashed ids only, never as query text.
 - **Every `omarchy menu` route works as before**: submenus open scoped (`omarchy menu toggle system`), leaf aliases run immediately (`omarchy menu summon reminder-set`), `apps` opens the Applications provider. Pickers honor `width`/`maxHeight`; a new picker request cancels a pending one.
 
+## Extensions
+
+Third-party extensions live inside Keystroke itself, one folder each under [extensions/](extensions/), the way the [Raycast extensions repository](https://github.com/raycast/extensions) works: anyone adds a folder, opens a pull request, and once it is reviewed and merged the extension reaches every user with the next Keystroke update. The bundled providers in `providers/` are the vetted core; `extensions/` is where the community adds theirs.
+
+**Every extension is off until you turn it on.** Installing or updating Keystroke never runs code from `extensions/`: an extension that is off is not even compiled. Type `ext` and open **Extensions**:
+
+- The list shows every extension with its version and state. `↵` opens its screen; `Ctrl+↵` on a row that is on turns it off.
+- **Enabled** on an extension's screen asks for confirmation: it says the extension was automatically checked and reviewed before it shipped, that it nonetheless runs at your own risk, and that checking its code first is recommended. Confirming loads it at once. Turning it off destroys its service. One that failed to load shows **Needs attention** with the QML error.
+- **Run setup** appears only for an extension that declares a setup script (a model to download, something to build). It opens a visible terminal and runs the script in front of you; nothing runs on its own.
+- **Settings** opens the extension's settings screen; **Open source** opens its folder on GitHub.
+- **Write your own** points at the guide. A folder in `~/.local/share/keystroke/extensions/` is picked up next time the palette opens, so you can use an extension you are writing before, or instead of, sending it upstream.
+
+**In the box.** [Timer](extensions/timer/) (`timer 25m focus`), [Translate](extensions/translate/) (`tr fr good morning`), [Currency](extensions/currency/) (`100 usd to eur`, the European Central Bank's daily rates through Frankfurter, kept for offline use; by Gunhan Selas), [Keyboard Cleaner](extensions/keyboard-cleaner/) (`wipe 30s` blocks every keyboard and pointer through Hyprland while you wipe them; by ozz1ee), [Browser search](extensions/browser-search/) (`browser github`, or just the words at the root: your default browser's history and bookmarks, read in place without copies or network) and [GIF Search](extensions/gif-search/) (`gif thank you`: a GIPHY grid, `↵` copies the GIF to the clipboard, `Ctrl+↵` its link). All six are off until you turn them on.
+
+**Write one.** An extension is a folder with an `extension.json` (name, version, description, icon, `apiVersion`, and the **commands** it answers to: prefix, arguments and examples, which become its Usage section, its hint line and its entry on the `/` screen) and a `Service.qml` exposing a `provider` object with `query(ctx)`. It can declare the shapes of text it answers as **patterns** (regular expressions with a boost: `price = 10` lifts Calpad's offer above the assistant hand-offs without Calpad knowing about them), carry its own **image icon** on every row about it, and ship a **view** of its own over the palette card. The reference is [extensions/timer](extensions/timer/): countdown timers with settings, a scoped screen, a service that outlives the palette, a sound when a timer ends, a countdown next to the menu button in the bar and unit tests, small enough to read in one sitting. [extensions/translate](extensions/translate/) is Google Translate without an account (`tr bonjour`, `tr fr good morning`, `bonjour to english`), with an editor view, a target-language picker and selection rows; it shows an extension with a view, patterns and network access. The contract is [docs/providers.md](docs/providers.md); the step-by-step guide for people and coding agents, from the first folder to the pull request, is [CONTRIBUTING.md](CONTRIBUTING.md#build-an-extension).
+
+## Voice
 ## Smart Match
 
 **Keystroke Settings > Matching** contains:
@@ -83,27 +83,6 @@ Matching settings screen or `bin/keystroke matching` to retry installation. Runt
 files live under `~/.local/share/keystroke/matching` (or `XDG_DATA_HOME`). More detail
 is in [the matching runtime documentation](matching/README.md).
 
-## Extensions
-
-Third-party extensions live inside Keystroke itself, one folder each under [extensions/](extensions/), the way the [Raycast extensions repository](https://github.com/raycast/extensions) works: anyone adds a folder, opens a pull request, and once it is reviewed and merged the extension reaches every user with the next Keystroke update. The bundled providers in `providers/` are the vetted core; `extensions/` is where the community adds theirs.
-
-<p align="center"><img src="site/assets/screenshots/extension-detail.png" alt="One extension's screen" width="720"></p>
-
-**Every extension is off until you turn it on.** Installing or updating Keystroke never runs code from `extensions/`: an extension that is off is not even compiled. Type `ext` and open **Extensions**:
-
-- The list shows every extension with its version and state. `↵` opens its screen; `Ctrl+↵` on a row that is on turns it off.
-- **Enabled** on an extension's screen asks for confirmation: it says the extension was automatically checked and reviewed before it shipped, that it nonetheless runs at your own risk, and that checking its code first is recommended. Confirming loads it at once. Turning it off destroys its service. One that failed to load shows **Needs attention** with the QML error.
-- **Run setup** appears only for an extension that declares a setup script (a model to download, something to build). It opens a visible terminal and runs the script in front of you; nothing runs on its own.
-- **Settings** opens the extension's settings screen; **Open source** opens its folder on GitHub.
-- **Write your own** points at the guide. A folder in `~/.local/share/keystroke/extensions/` is picked up next time the palette opens, so you can use an extension you are writing before, or instead of, sending it upstream.
-
-**In the box.** [Timer](extensions/timer/) (`timer 25m focus`), [Translate](extensions/translate/) (`tr fr good morning`), [Currency](extensions/currency/) (`100 usd to eur`, the European Central Bank's daily rates through Frankfurter, kept for offline use; by Gunhan Selas), [Keyboard Cleaner](extensions/keyboard-cleaner/) (`wipe 30s` blocks every keyboard and pointer through Hyprland while you wipe them; by ozz1ee), [Browser search](extensions/browser-search/) (`browser github`, or just the words at the root: your default browser's history and bookmarks, read in place without copies or network) and [GIF Search](extensions/gif-search/) (`gif thank you`: a GIPHY grid, `↵` copies the GIF to the clipboard, `Ctrl+↵` its link). All six are off until you turn them on.
-
-**Write one.** An extension is a folder with an `extension.json` (name, version, description, icon, `apiVersion`, and the **commands** it answers to: prefix, arguments and examples, which become its Usage section, its hint line and its entry on the `/` screen) and a `Service.qml` exposing a `provider` object with `query(ctx)`. It can declare the shapes of text it answers as **patterns** (regular expressions with a boost: `price = 10` lifts Calpad's offer above the assistant hand-offs without Calpad knowing about them), carry its own **image icon** on every row about it, and ship a **view** of its own over the palette card. The reference is [extensions/timer](extensions/timer/): countdown timers with settings, a scoped screen, a service that outlives the palette, a sound when a timer ends, a countdown next to the menu button in the bar and unit tests, small enough to read in one sitting. [extensions/translate](extensions/translate/) is Google Translate without an account (`tr bonjour`, `tr fr good morning`, `bonjour to english`), with an editor view, a target-language picker and selection rows; it shows an extension with a view, patterns and network access. The contract is [docs/providers.md](docs/providers.md); the step-by-step guide for people and coding agents, from the first folder to the pull request, is [CONTRIBUTING.md](CONTRIBUTING.md#build-an-extension).
-
-<p align="center"><img src="site/assets/screenshots/timer.png" alt="The Timer extension answering timer 25m focus" width="720"></p>
-
-## Voice
 
 Keystroke dictates through [voxtype](https://voxtype.io), the optional dictation daemon Omarchy installs from Install › AI › Dictation. Keystroke Settings › Voice shows **Voxtype voice command integration**, on by default as soon as `voxtype` is on the `PATH`, and offers Omarchy's installer when it is not. Keystroke uses that ordinary installation as-is: it does not install a fork, replace the user service, or edit `~/.config/voxtype/config.toml`. Model, language, audio, VAD and output preferences remain entirely under `voxtype configure`.
 
@@ -127,13 +106,9 @@ Keystroke passes only per-recording `--file` and `--no-osd` overrides. With the 
 
 ## Codex inside Keystroke
 
-<p align="center"><img src="site/assets/screenshots/codex.png" alt="The Codex screen" width="720"></p>
-
 Type or speak, then select **Ask Codex here**, or type `? ` before your question. Answers stream inside the palette. `↵` sends a follow-up, `Shift+↵` adds a line, your voice hotkey fills the composer, **Stop** interrupts, `Esc` closes. **Codex → Recent questions** continues a conversation; **Continue in Codex** (`Ctrl+↵`) hands it to your desktop app or CLI; **Open task in Codex** opens a new request there. Settings → Codex selects the model, Fast/Standard processing, destination and an optional working folder; the default is GPT-5.6 Luna using your existing `codex login`. Keystroke owns one local `codex app-server` process, shuts it down after ten idle minutes, never reads credentials, and stores only its recent-question index and drafts. This integration pins Codex CLI 0.153.2. Details and limits: [docs/codex-integration-verification.md](docs/codex-integration-verification.md).
 
 ## Settings
-
-<p align="center"><img src="site/assets/screenshots/settings.png" alt="Keystroke Settings" width="720"></p>
 
 One file, hand-editable and hot-reloaded: `~/.config/omarchy/keystroke.json` (see [keystroke.example.json](keystroke.example.json)). Settings screens are generated from each provider's schema; writes are atomic, preserve unknown fields, and are refused while the file fails to parse. Every screen, setting and choice is searchable from the palette root through its breadcrumb. **Learn Keystroke** on the Settings screen opens the usage guide in your browser. Appearance: density (compact/comfortable), accent (theme accent or ember/violet/mint), previews on/off, animations (off, snappy or fluid) and the window transition (instant, fade or slide up). Colors, fonts, radius and spacing follow the active Omarchy theme.
 
@@ -144,8 +119,8 @@ bin/keystroke validate     # omarchy plugin validate
 bin/keystroke test         # qmltestrunner unit tests, Quickshell integration checks, qmllint
 ```
 
-[docs/verification.md](docs/verification.md) records what was run on the reference machine; [docs/architecture.md](docs/architecture.md) describes the design; [CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide.
+[docs/architecture.md](docs/architecture.md) describes the design; [CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Omarchy's MIT-licensed menu model is vendored in [omarchy/MenuModel.js](omarchy/MenuModel.js).
+MIT, see [LICENSE](LICENSE). The menu model is Omarchy's own MIT-licensed `$OMARCHY_PATH/shell/plugins/menu/MenuModel.js`, imported from the installed shell; no copy is vendored.

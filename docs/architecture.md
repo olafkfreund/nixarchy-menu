@@ -18,7 +18,7 @@ omarchy-shell
        ├─ providers/Extensions.qml   the Extensions screen: switches, setup scripts in a visible
        │                             terminal, source links (core/Extensions.js)
        ├─ core/*.js   Match (fuzzy matcher + tiers), Patterns (provider-declared query shapes), Commands (declared prefixes: routing, hint line, placeholders, usage), SettingsTree, Frecency, Settings, VoiceBindings, Intent, Calculator, Units, Colors, Emoji, AiTargets, Files, Extensions
-       ├─ omarchy/MenuModel.js   vendored stock menu model (parse, merge, routes, guards)
+       ├─ $OMARCHY_PATH/shell/plugins/menu/MenuModel.js   the shell's stock menu model (parse, merge, routes, guards), no vendored copy
        ├─ voice/VoiceSession.qml   voxtype recording lifecycle, optional live transcript and audio levels
        ├─ codex/      AppServer, CodexSession, ConversationView, Policy
        └─ ui/         ResultRow, PreviewPane, Keycap, VoiceWave
@@ -73,7 +73,7 @@ Keystrokes debounce 25 ms; asynchronous refreshes respect that pending pause, wh
 
 ## Omarchy menu parity
 
-`providers/OmarchyMenu.qml` is a port of the stock `Menu.qml` logic over the vendored `MenuModel.js`: default plus user JSONC (watched, merged per key), aliases and links through `resolveRoute`, leaf routes executed on summon, `when`/`checked` guards evaluated as one batch on load and on every open (never per query), the `fonts` (volatile) and `power-profiles` providers loaded on submenu entry or search and cached for the session, actions run through `Util.execDetached` (`bash -lc`). The `apps` submenu is the Applications provider, which uses `shell.appLibrary` for entries, hidden filters, icons, launch feedback and uninstall.
+`providers/OmarchyMenu.qml` is a port of the stock `Menu.qml` logic over the shell's own `MenuModel.js` (imported from `file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js`): default plus user JSONC (watched, merged per key), aliases and links through `resolveRoute`, leaf routes executed on summon, `when`/`checked` guards evaluated as one batch on load and on every open (never per query), the `fonts` (volatile) and `power-profiles` providers loaded on submenu entry or search and cached for the session, actions run through `Util.execDetached` (`bash -lc`). The `apps` submenu is the Applications provider, which uses `shell.appLibrary` for entries, hidden filters, icons, launch feedback and uninstall.
 
 ## Integration points used
 
@@ -132,8 +132,7 @@ intent descriptions, memoized lexical words/families and, per set of intent
 constraints, the filtered documents and a digest identifying them. The digest keys
 the request so an unchanged catalog is never serialized or re-sent. Frecency keys
 are memoized hashes (item hash, colon, query-context hash) computed once per row
-and once per query, never inside the sort. `tools/profile_palette.py` measures each
-phase offscreen against this machine's real providers.
+and once per query, never inside the sort.
 
 The host gathers available catalog rows from opted-in providers and root navigation
 rows from remaining bundled providers, applies intent/scope constraints, and sends
