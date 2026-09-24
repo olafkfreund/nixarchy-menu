@@ -306,6 +306,22 @@
                 touch $out
               '';
 
+          # bin/nixarchy-menu refuses install/uninstall on a nixarchy-managed
+          # plugin (#20); stubs stand in for nix and the omarchy CLI.
+          install-guard =
+            pkgs.runCommand "nixarchy-menu-check-install-guard"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  pkgs.jq
+                ];
+              }
+              ''
+                export HOME=$TMPDIR
+                python3 ${checkSrc}/tests/install_guard_check.py
+                touch $out
+              '';
+
           # A silent SKIP (tokenizers not importable) must not pass CI: it
           # would mean the parity test never actually ran.
           engine =
