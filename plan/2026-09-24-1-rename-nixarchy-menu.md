@@ -233,3 +233,10 @@ and `.github/PULL_REQUEST_TEMPLATE.md`.
 - Users' old data is never modified, so going back to `evindor.keystroke`
   (`omarchy plugin enable evindor.keystroke` after disabling
   `nixarchy.menu`) finds everything as it was.
+
+## Deviations during implementation
+
+### F: app
+- The migrate Process path is `helpers/migrate-state.sh`, not `../helpers`. The entry file sits at the repo root, as with the existing `matching/descriptions.json` load.
+- `matchingSession` is created in `NixarchyMenu.qml`, so F gated it there (`enabled: root.stateReady && …`). `matching/Session.qml` has no `host` and needs no gate of its own.
+- F once ran the real script against p620's `$HOME` by mistake. There was no Keystroke data, so it only created an empty `~/.local/state/nixarchy-menu`, which F removed. The lead confirmed no new paths remain on p620.
