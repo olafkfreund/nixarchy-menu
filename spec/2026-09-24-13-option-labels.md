@@ -39,3 +39,8 @@ unchanged.
 - The QML suite passes, including the new case.
 - Settings › Files › Search in the main palette shows **Only with ~**. Checked
   with the new test; the palette render is the same code path.
+
+## Amendment (2026-09-24, user decision during implementation)
+The `prefix` label is **Starts with ~**, not "Only with ~". The latter ranked
+its choice row above the setting for abbreviations ending in `mo`. See the
+amendment in `plan/2026-09-24-13-option-labels.md`.
