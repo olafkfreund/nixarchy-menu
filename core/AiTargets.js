@@ -89,3 +89,8 @@ function nixiRow(text, canAsk) {
       { type: "notify", glyph: "󰅍", headline: "Question copied", body: "Paste it into Nixi with Ctrl+V" } ] }
   }
 }
+
+// A lone "?": nothing to ask yet, so just open Nixi.
+function openNixiRow() {
+  return { title: "Ask Nixi", subtitle: "Open Nixi", verb: "Open", action: { type: "exec", argv: ["nixi"] } }
+}

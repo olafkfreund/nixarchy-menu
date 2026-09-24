@@ -43,6 +43,10 @@ spec: spec/2026-09-24-5-plugin-help-rows.md
    2, and `tst_ai.qml` (or an AiWeb harness) for step 3.
    → Verify: the QML suite passes, and the harness passes locally in
    `nix develop`.
+   *Deviation:* the cases extend `tests/catalog_check.py` itself, with the
+   fixture set inline as `items` (as its existing case does) instead of a
+   jsonc file, and the AiWeb `?` case runs the real provider in the same
+   harness. No new harness, so the flake and `bin` lists are unchanged.
 5. **Lead:**
    - commit
    - `nix flake check` plus a forced `--rebuild` of `quickshell`

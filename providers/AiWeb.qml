@@ -8,7 +8,7 @@ import "../core/AiTargets.js" as AiTargets
 // Typing never runs anything: the agent comes from a watched file, whether it
 // is installed from one `command -v` re-run when the agent or the desktop
 // entries change, and Nixi's state from one check per palette open. A leading
-// "?" puts Ask Nixi first.
+// "?" puts Ask Nixi first; a lone "?" just offers to open Nixi.
 Item {
   id: root
   property var host: null
@@ -105,7 +105,7 @@ Item {
     var raw = String(ctx.rawQuery === undefined ? ctx.query : ctx.rawQuery).trim()
     var asked = raw.charAt(0) === "?"
     var q = asked ? raw.slice(1).trim() : raw
-    if (!q) return []
+    if (!q) return asked && root.nixi ? [row(AiTargets.openNixiRow(), "nixi", "", "answer", 3.5, "")] : []
     var rows = []
     if (root.nixi) rows.push(row(AiTargets.nixiRow(q, root.nixiAsk), "nixi", "", asked ? "answer" : "fallback", 3.5, q))
     var installed = root.found.id === root.agentId && AiTargets.isInstalled(root.agentId, root.found.commands)
