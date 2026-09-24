@@ -240,3 +240,10 @@ and `.github/PULL_REQUEST_TEMPLATE.md`.
 - The migrate Process path is `helpers/migrate-state.sh`, not `../helpers`. The entry file sits at the repo root, as with the existing `matching/descriptions.json` load.
 - `matchingSession` is created in `NixarchyMenu.qml`, so F gated it there (`enabled: root.stateReady && …`). `matching/Session.qml` has no `host` and needs no gate of its own.
 - F once ran the real script against p620's `$HOME` by mistake. There was no Keystroke data, so it only created an empty `~/.local/state/nixarchy-menu`, which F removed. The lead confirmed no new paths remain on p620.
+
+### G: strings
+- The fuzzy-abbreviation fixtures depended on the old "Keystroke Settings" breadcrumb, so `keysepro` became `nixsepro` and `kspa` became `nmspa` (tests and comments). The `tst_match` query at :37 is now `nixarchy`.
+- `codex_session_check.py` passes a host stub with `stateReady: true`, so the gated history path is still exercised.
+- `rg` treats `tests/tst_extensions.qml` as binary and silently skips it. It was edited by hand, and the lead's reference search uses `rg -a`.
+- `extensions/browser-search/extension.json` keeps `"author": "Keystroke contributors"` as upstream credit.
+- QML: 266 passed, 0 failed. That is 265 plus the legacy voice-block case.

@@ -62,7 +62,7 @@ def parity(binary, model_dir, texts, label):
     print('ok tokenizer parity (%s): %d texts' % (label, len(texts)))
 
 
-with tempfile.TemporaryDirectory(prefix='keystroke-engine-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-engine-') as temp:
     work = Path(temp)
     binary = build(work / 'target')
     model = work / 'model'
@@ -96,7 +96,7 @@ with tempfile.TemporaryDirectory(prefix='keystroke-engine-') as temp:
     shipped = root / 'matching/bin/keystroke-matching'
     manifest = json.loads(shipped.with_suffix('.json').read_text())
     fingerprint = subprocess.run([sys.executable, str(root / 'helpers/matching-start.py'), '--engine-fingerprint'], capture_output=True, text=True, check=True).stdout.strip()
-    assert manifest['source'] == fingerprint, 'matching/bin/keystroke-matching is stale: run bin/keystroke engine'
+    assert manifest['source'] == fingerprint, 'matching/bin/keystroke-matching is stale: run bin/nixarchy-menu engine'
     import hashlib
     assert manifest['sha256'] == hashlib.sha256(shipped.read_bytes()).hexdigest(), 'shipped engine does not match its manifest'
     assert manifest['target'] == 'x86_64-unknown-linux-musl', 'shipped engine must be the static musl build'
@@ -106,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix='keystroke-engine-') as temp:
     else:
         print('skip: shipped engine is for', manifest['machine'])
 
-    installed = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'keystroke/matching/models/small'
+    installed = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'nixarchy-menu/matching/models/small'
     snapshots = sorted(installed.glob('*/tokenizer.json')) if installed.is_dir() else []
     if snapshots:
         real = snapshots[-1].parent

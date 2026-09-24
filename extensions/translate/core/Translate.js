@@ -309,11 +309,11 @@ function resolveSubject(subject, targets, settings, lookup, busy) {
 // ---------------------------------------------------------------- effects
 function copyEffect(text) { return { type: "copy", text: text } }
 
-// Paste the way Keystroke's own dictation does: put the text on the clipboard,
+// Paste the way nixarchy-menu's own dictation does: put the text on the clipboard,
 // then press Shift+Insert in whatever has focus once the palette is gone. The
 // text is a positional argument, never part of the command string.
 function pasteArgv(text) {
-  return ["sh", "-c", 'wl-copy -- "$1" && sleep 0.15 && wtype -M shift -k Insert -m shift', "keystroke-translate", String(text)]
+  return ["sh", "-c", 'wl-copy -- "$1" && sleep 0.15 && wtype -M shift -k Insert -m shift', "nixarchy-menu-translate", String(text)]
 }
 function pasteEffect(text) { return { type: "exec", argv: pasteArgv(text) } }
 

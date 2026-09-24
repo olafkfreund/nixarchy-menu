@@ -2,7 +2,7 @@ import QtQuick
 import "../core/Match.js" as Match
 
 // Installed applications through Omarchy's shared AppLibrary (hidden-entry
-// filtering, icon index, launch feedback, uninstall). Matching is Keystroke's
+// filtering, icon index, launch feedback, uninstall). Matching is nixarchy-menu's
 // own, at the root and inside the Applications screen alike.
 Item {
   id: root

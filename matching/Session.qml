@@ -112,11 +112,11 @@ Item {
     command: root.command
     stdinEnabled: true
     stdout: SplitParser { onRead: data => root.receive(data) }
-    stderr: SplitParser { onRead: data => console.log("keystroke matching:", data) }
+    stderr: SplitParser { onRead: data => console.log("nixarchy-menu matching:", data) }
     onExited: {
       var expected = root.stopping
       root.stopping = false
-      if (!expected && !root.failed) root.fail("Matching helper stopped; retry in Keystroke Settings")
+      if (!expected && !root.failed) root.fail("Matching helper stopped; retry in nixarchy-menu Settings")
       if (expected && root.queued && root.enabled) Qt.callLater(root.sendLatest)
     }
   }

@@ -10,12 +10,12 @@ TestCase {
         var b = VoiceBindings.block("SUPER + SPACE, SUPER + SHIFT + code:201")
         var lines = b.split("\n")
         compare(lines.length, 6)
-        verify(lines[0].indexOf("-- >>> keystroke voice") === 0)
+        verify(lines[0].indexOf("-- >>> nixarchy-menu voice") === 0)
         compare(lines[1], "o.bind(\"SUPER + SPACE\", nil, \"omarchy-shell shell call omarchy.menu voiceHold '{}'\", { long_press = true })")
         compare(lines[2], "o.bind(\"SUPER + SPACE\", nil, \"omarchy-shell shell call omarchy.menu voiceRelease '{}'\", { release = true })")
         verify(lines[3].indexOf("\"SUPER + SHIFT + code:201\"") > 0 && lines[3].indexOf("long_press") > 0)
         verify(lines[4].indexOf("\"SUPER + SHIFT + code:201\"") > 0 && lines[4].indexOf("release = true") > 0)
-        compare(lines[5], "-- <<< keystroke voice")
+        compare(lines[5], "-- <<< nixarchy-menu voice")
     }
     function test_keys_are_trimmed_deduplicated_and_escaped() {
         compare(VoiceBindings.parseKeys("  SUPER +  SPACE ,, super + space,SUPER + SPACE, "), ["SUPER + SPACE", "super + space"])
@@ -35,15 +35,27 @@ TestCase {
         compare(VoiceBindings.status(updated, "F13"), "installed")
         verify(updated.indexOf("-- trailing user line") > 0)
         verify(updated.indexOf("SUPER + SPACE") < 0)
-        compare(updated.split("keystroke voice").length, 3)        // one begin, one end
+        compare(updated.split("nixarchy-menu voice").length, 3)        // one begin, one end
         compare(VoiceBindings.remove(updated), userFile + "-- trailing user line\n")
         compare(VoiceBindings.apply("", "F13").indexOf("-- >>>"), 0)
     }
     function test_a_block_missing_its_end_marker_is_replaced_to_the_end() {
-        var broken = userFile + "\n-- >>> keystroke voice: hold the palette hotkey to dictate (written by Keystroke Settings › Voice)\no.bind(\"X\", nil, \"y\", {})\n"
+        var broken = userFile + "\n-- >>> nixarchy-menu voice: hold the palette hotkey to dictate (written by nixarchy-menu Settings › Voice)\no.bind(\"X\", nil, \"y\", {})\n"
         compare(VoiceBindings.status(broken, "X"), "outdated")
         var fixed = VoiceBindings.apply(broken, "X")
         compare(VoiceBindings.status(fixed, "X"), "installed")
         verify(fixed.indexOf("o.bind(\"X\", nil, \"y\"") < 0)
+    }
+    function test_a_legacy_keystroke_block_is_outdated_and_rewritten_in_place() {
+        var legacy = userFile + "\n" + VoiceBindings.LEGACY_BEGIN + "\n" +
+            "o.bind(\"F13\", nil, \"omarchy-shell shell call omarchy.menu voiceHold '{}'\", { long_press = true })\n" +
+            VoiceBindings.LEGACY_END + "\n-- trailing user line\n"
+        compare(VoiceBindings.status(legacy, "F13"), "outdated")
+        var updated = VoiceBindings.apply(legacy, "F13")
+        compare(VoiceBindings.status(updated, "F13"), "installed")
+        compare(updated.split(VoiceBindings.BEGIN).length, 2)       // exactly one new block
+        verify(updated.indexOf("keystroke voice") < 0)              // no legacy text left
+        verify(updated.indexOf("-- trailing user line") > 0)
+        compare(VoiceBindings.remove(legacy), userFile + "-- trailing user line\n")
     }
 }

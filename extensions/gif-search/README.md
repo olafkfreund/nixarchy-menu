@@ -1,8 +1,8 @@
 # GIF Search
 
-A small GIPHY browser for Keystroke. Enable **Extensions > GIF Search**, type
+A small GIPHY browser for nixarchy-menu. Enable **Extensions > GIF Search**, type
 `gif happy` and press Enter to open the grid. `gif` opens trending GIFs.
-The command prefix can be changed in Keystroke's generated settings screen.
+The command prefix can be changed in nixarchy-menu's generated settings screen.
 
 - Type to search; requests wait until typing pauses for 300 ms.
 - Up/Down moves between rows. Tab switches from the search field to the grid,
@@ -13,7 +13,7 @@ The command prefix can be changed in Keystroke's generated settings screen.
   search returns to results.
 - Copy success or failure appears in the footer.
 
-Settings in **Keystroke Settings > GIF Search**:
+Settings in **nixarchy-menu Settings > GIF Search**:
 
 - **Default action:** Copy image (default) or Copy link. Swaps Enter and Ctrl+Enter,
   as well as click and Ctrl+click; the footer reflects the selected action.
@@ -39,7 +39,7 @@ Studied the [Raycast GIF Search source at the requested commit](https://github.c
   cache) and calls Raycast's macOS clipboard API.
 
 This is a fresh QML/Python implementation of the core workflow, following
-Keystroke's `CONTRIBUTING.md` extension guide and `docs/providers.md` API 1.
+nixarchy-menu's `CONTRIBUTING.md` extension guide and `docs/providers.md` API 1.
 `core/Gifs.js` builds literal curl argv, validates results and creates the entry
 row; `Service.qml` owns requests, debounce and clipboard state; `GifView.qml`
 renders a three-column animated grid using host theme tokens. The Python
@@ -48,13 +48,13 @@ Only the current page is retained in memory. Outdated responses are ignored.
 
 ## Dependencies and data access
 
-Requires the existing Keystroke/Quickshell environment, Qt GIF image support,
+Requires the existing nixarchy-menu/Quickshell environment, Qt GIF image support,
 `curl`, `python3`, and `wl-copy` (wl-clipboard). No setup or package installation.
 
 Nothing executes while disabled. Opening the GIF grid requests trending/search
 JSON from `https://gif-search.raycast.com/api/giphy`, the same public proxy the
 original uses, without an API key. This is Raycast-operated infrastructure,
-not a guaranteed Keystroke service: availability or access may change. Search
+not a guaranteed nixarchy-menu service: availability or access may change. Search
 phrases are sent to that proxy and GIPHY. Requests have a 15-second timeout and
 a 2 MB response limit; errors have an explicit Retry button.
 
@@ -72,15 +72,15 @@ exits, as usual. Disabling stops the extension's running processes.
 From the repository root:
 
 ```sh
-QT_QPA_PLATFORMTHEME=generic bin/keystroke check-extensions extensions/gif-search
+QT_QPA_PLATFORMTHEME=generic bin/nixarchy-menu check-extensions extensions/gif-search
 python3 extensions/gif-search/tests/test_copy.py
 python3 extensions/gif-search/tests/palette_check.py
 ```
 
 For local discovery, link this folder into
-`~/.local/share/keystroke/extensions/gif-search`, then enable it through Keystroke.
+`~/.local/share/nixarchy-menu/extensions/gif-search`, then enable it through nixarchy-menu.
 Reload the shell after editing an already loaded service, as the host guide
-describes. The implementation does not change Keystroke's core or live settings.
+describes. The implementation does not change nixarchy-menu's core or live settings.
 
 Verified on 2026-09-12: extension validation/lint and QML tests, four Python
 clipboard tests, and the real palette offscreen test (including keyboard input)

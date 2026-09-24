@@ -7,7 +7,7 @@ TestCase {
     name: "Intent"
     property var items: [
         { title: "Google Chrome", detail: "Web Browser" },
-        { title: "Keystroke Settings", detail: "" },
+        { title: "nixarchy-menu Settings", detail: "" },
         { title: "Night Light", detail: "Toggle › Display" },
         { title: "Lock Screen", detail: "System" }
     ]
@@ -18,7 +18,7 @@ TestCase {
         compare(Intent.normalize("open up the settings, please"), "settings")
         compare(Intent.normalize("Turn on night light."), "night light")
         compare(Intent.normalize("Lock the screen!"), "Lock screen")
-        compare(Intent.normalize("  Keystroke   settings.  "), "Keystroke settings")
+        compare(Intent.normalize("  nixarchy-menu   settings.  "), "nixarchy-menu settings")
         compare(Intent.normalize("Open."), "Open")          // a verb alone stays a query
         compare(Intent.normalize(""), "")
         compare(Intent.normalize("…"), "")

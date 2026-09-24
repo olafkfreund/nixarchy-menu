@@ -7,12 +7,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-dmenu-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-dmenu-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  id: root\n", "  id: root\n  property alias testCard: card\n  property alias testContent: content\n  property alias testEmptyState: emptyState\n", 1)
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
@@ -25,7 +25,7 @@ ShellRoot {
   id: test
   property real oneRowHeight: 0
   function check(ok, msg) { if (!ok) { console.log("FAIL", msg); Qt.quit(); throw Error(msg) } }
-  Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
   Timer { interval: 250; running: true; onTriggered: {
     palette.open(JSON.stringify({ mode: "select", prompt: "Keybindings", options: ["Super + K → Keybindings"], width: 800, maxHeight: 500 }))
     test.check(palette.rows.length === 1, "the picker begins with one row")

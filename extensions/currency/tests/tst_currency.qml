@@ -118,11 +118,11 @@ TestCase {
   }
 
   function test_fetch_argv() {
-    var argv = Currency.fetchArgv("/h/.cache/keystroke/currency", "/h/.local/state/keystroke/currency")
+    var argv = Currency.fetchArgv("/h/.cache/nixarchy-menu/currency", "/h/.local/state/nixarchy-menu/currency")
     compare(argv.slice(0, 2), ["bash", "-c"])
     verify(argv[2].indexOf("curl -sS --fail --max-time 15 -- https://api.frankfurter.dev/v2/rates") > 0)
     verify(argv[2].indexOf('mkdir -p -- "$1" "$2"') === 0)
-    compare(argv.slice(3), ["keystroke-currency", "/h/.cache/keystroke/currency", "/h/.local/state/keystroke/currency"])
+    compare(argv.slice(3), ["nixarchy-menu-currency", "/h/.cache/nixarchy-menu/currency", "/h/.local/state/nixarchy-menu/currency"])
   }
 
   function test_rows() {

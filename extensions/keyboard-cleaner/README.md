@@ -6,7 +6,7 @@ Written by [ozz1ee](https://github.com/ozz1ee-dev) as the Keystroke counterpart 
 
 ## Turn it on
 
-Extensions ship with Keystroke switched off. Type `ext`, open **Extensions → Keyboard Cleaner**, and confirm **Enabled** (or Keystroke Settings → Keyboard Cleaner → Enabled).
+Extensions ship with nixarchy-menu switched off. Type `ext`, open **Extensions → Keyboard Cleaner**, and confirm **Enabled** (or nixarchy-menu Settings → Keyboard Cleaner → Enabled).
 
 ## Use
 
@@ -30,12 +30,12 @@ The countdown view says how many devices went quiet and when they come back, and
 
 ## Settings
 
-Keystroke Settings → Keyboard Cleaner:
+nixarchy-menu Settings → Keyboard Cleaner:
 
 - **Default duration (seconds)**: used by `wipe` with no duration. Default 30, at most 300.
 - **Also block mice and touchpads**: on by default. Off leaves the pointer working so you can wipe the keys while still able to click.
 
-Values live under `providers.keyboard-cleaner` in `~/.config/omarchy/keystroke.json`.
+Values live under `providers.keyboard-cleaner` in `~/.config/omarchy/nixarchy-menu.json`.
 
 ## How it blocks
 
@@ -69,6 +69,6 @@ It restores every device when the time is up, on SIGTERM, SIGINT or SIGHUP, and 
 - `BlockView.qml`: the countdown shown over the palette.
 - `core/Parser.js`: durations, rows and the helper argv as pure functions.
 - `bin/keyboard-cleaner`: the Python helper that talks to Hyprland.
-- `tests/tst_parser.qml`: unit tests for the pure functions, run by `bin/keystroke check-extensions`; `tests/test_helper.py`: unit tests for the helper's device selection and quoting (`python3 tests/test_helper.py`).
+- `tests/tst_parser.qml`: unit tests for the pure functions, run by `bin/nixarchy-menu check-extensions`; `tests/test_helper.py`: unit tests for the helper's device selection and quoting (`python3 tests/test_helper.py`).
 
 To try the helper on its own without losing your keyboard, name a harmless device: `bin/keyboard-cleaner --seconds 2 --device sleep-button` prints what it blocked, waits two seconds and restores it. `bin/keyboard-cleaner --seconds 1 --dry-run` prints what a real `wipe` would cover and touches nothing (on Apple hardware the list ends up with `apple-spi-keyboard`, `apple-smc-power/lid-events`, `apple-spi-trackpad` and any mouse). To see the held-key guard, hold a key down and run it: it prints `Something is still holding a key down` instead of blocking.

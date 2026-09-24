@@ -7,12 +7,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-route-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-route-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
@@ -32,14 +32,14 @@ ShellRoot {
     menu.itemOrder = ["root", "apps"]
     menu.rowsLoaded = true
   }
-  Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
   Timer { interval: 250; running: true; onTriggered: {
     palette.applyConfigText(JSON.stringify({ version: 1, matching: { mode: "off" }, providers: { applications: { enabled: false } } }))
     test.appsRoute()
     palette.open('{"menu":"apps"}')
     test.check(palette.scope === "", "a disabled apps route falls back to root")
     test.check(palette.scopeTitle === "", "the disabled breadcrumb is cleared")
-    test.check(palette.statusMessage === "Applications is disabled in Keystroke Settings", "the fallback explains why")
+    test.check(palette.statusMessage === "Applications is disabled in nixarchy-menu Settings", "the fallback explains why")
 
     palette.applyConfigText(JSON.stringify({ version: 1, matching: { mode: "off" }, providers: { applications: { enabled: true } } }))
     test.appsRoute()

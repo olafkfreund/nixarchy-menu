@@ -14,13 +14,13 @@ root = Path(__file__).resolve().parents[1]
 # the flag the tap starts dictation and the window is destroyed a tick later.
 manifest = json.loads((root/'manifest.json').read_text())
 assert manifest.get('keepLoaded') is True, 'manifest.json must set "keepLoaded": true; tap-to-dictate depends on it'
-with tempfile.TemporaryDirectory(prefix='keystroke-palette-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git', '.claude', '.agents', '.codex', 'tests', '__pycache__'))
     for name, target in [('qs', '/usr/share/omarchy/shell'), ('Commons', '/usr/share/omarchy/shell/Commons'), ('Ui', '/usr/share/omarchy/shell/Ui')]:
         (work/name).symlink_to(target)
-    p=project/'Keystroke.qml'
+    p=project/'NixarchyMenu.qml'
     s=p.read_text().replace('  id: root\n', '''  id: root
   property alias testVoice: root.voice
   property alias testSearch: search
@@ -65,7 +65,7 @@ ShellRoot {
   property int stage: 0
   property string text: "Open the document, please.\\nKeep  two spaces! 🐈"
   function check(ok, message) { if (!ok) { console.log("FAIL", message); Qt.quit(); throw Error(message) } }
-  Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
   TestCase { id: keys; name: "KeyDriver"; when: false }
   Timer { interval: 250; running: true; onTriggered: {
     palette.testTransfer.copyCommand = ["python3", %s, "clipboard"]

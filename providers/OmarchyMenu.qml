@@ -5,7 +5,7 @@ import qs.Commons
 import "file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js" as MenuModel
 import "../core/Match.js" as Match
 
-// The complete Omarchy menu as a Keystroke provider. Parsing, merging, routes,
+// The complete Omarchy menu as a nixarchy-menu provider. Parsing, merging, routes,
 // guards and dynamic providers follow the stock plugin (Menu.qml/MenuModel.js
 // in Omarchy 4.0.2) so behavior stays identical; only presentation changed.
 Item {

@@ -9,18 +9,18 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
-with tempfile.TemporaryDirectory(prefix="keystroke-browser-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-browser-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text().replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
     source.write_text("\n".join(line for line in qml.splitlines() if "exclusionMode:" not in line and "WlrLayershell." not in line))
     config = work / ".config"
     (config / "omarchy").mkdir(parents=True)
-    (config / "omarchy/keystroke.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
+    (config / "omarchy/nixarchy-menu.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}}))
     profile = config / "chromium/Default"
     profile.mkdir(parents=True)
     with sqlite3.connect(profile / "History") as db:
@@ -39,7 +39,7 @@ ShellRoot {
   id: test
   property int stage: 0
   property int failures: 0
-  Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+  NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
   function service() { var s = palette.registry.services["browser-search"]; return s ? s.instance : null }
   function check(ok, msg) { if (!ok) { failures++; console.log("FAIL", msg) } }
   function items() { return palette.rows.filter(function(r) { return r.providerKey === "browser-search" && !r.disabled }) }

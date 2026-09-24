@@ -2,10 +2,10 @@
 .import "Match.js" as Match
 .import "Commands.js" as Commands
 
-// Extensions: third-party providers that ship inside Keystroke itself, one
+// Extensions: third-party providers that ship inside nixarchy-menu itself, one
 // folder each under extensions/ (reviewed and merged through pull requests,
 // like Raycast's extensions repository), plus any folder the user drops into
-// ~/.local/share/keystroke/extensions to develop one. Every extension is off
+// ~/.local/share/nixarchy-menu/extensions to develop one. Every extension is off
 // until the user turns it on; an extension that is off is never compiled or
 // instantiated, so a fresh install runs none of this code.
 //
@@ -19,13 +19,13 @@ var KEY = "extensions"
 var ICON = "󰏓"
 var FILE = "extension.json"
 var ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/
-var SOURCE_URL = "https://github.com/evindor/keystroke/tree/main/extensions/"
-var GUIDE_URL = "https://github.com/evindor/keystroke/blob/main/CONTRIBUTING.md#build-an-extension"
+var SOURCE_URL = "https://github.com/olafkfreund/nixarchy-menu/tree/main/extensions/"
+var GUIDE_URL = "https://github.com/olafkfreund/nixarchy-menu/blob/main/CONTRIBUTING.md#build-an-extension"
 
 function navigate(scope, title) { return { type: "navigate", scope: scope, title: title } }
 function safeString(v, limit) { return String(v === undefined || v === null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, limit || 400) }
 function pathOf(url) { return String(url || "").replace(/^file:\/\//, "").replace(/\/$/, "") }
-function localDir(home) { return home + "/.local/share/keystroke/extensions" }
+function localDir(home) { return home + "/.local/share/nixarchy-menu/extensions" }
 
 // A path inside the extension folder: relative, no `..`, no leading slash.
 function insideFolder(p) {
@@ -41,7 +41,7 @@ function insideFolder(p) {
 // that already ships). The glob skips dot folders.
 var SCAN_SCRIPT = 'emit() { for m in "$2"/*/extension.json; do [ -f "$m" ] || continue; printf "%s\\n%s\\n" "$1" "${m%/extension.json}"; cat "$m"; printf "\\0"; done; }; ' +
   'emit builtin "$1"; emit local "$2"'
-function scanArgv(builtinDir, localDir) { return ["bash", "-c", SCAN_SCRIPT, "keystroke-extensions-scan", builtinDir, localDir] }
+function scanArgv(builtinDir, localDir) { return ["bash", "-c", SCAN_SCRIPT, "nixarchy-menu-extensions-scan", builtinDir, localDir] }
 
 // { manifests: { id: manifest }, problems: [{ id, message }] }. A manifest is
 // the parsed extension.json plus `id` (the folder name), `dir` and `source`
@@ -87,7 +87,7 @@ function validate(id, body, taken) {
   var m
   try { m = JSON.parse(body) } catch (e) { return { message: FILE + " is not valid JSON" } }
   if (!m || typeof m !== "object" || Array.isArray(m)) return { message: FILE + " must be an object" }
-  if (m.apiVersion !== 1) return { message: "Needs Keystroke provider API 1, " + FILE + " declares " + JSON.stringify(m.apiVersion === undefined ? null : m.apiVersion) }
+  if (m.apiVersion !== 1) return { message: "Needs nixarchy-menu provider API 1, " + FILE + " declares " + JSON.stringify(m.apiVersion === undefined ? null : m.apiVersion) }
   if (!safeString(m.name, 80)) return { message: FILE + " needs a name" }
   var entry = m.entry === undefined ? "Service.qml" : m.entry
   if (typeof entry !== "string" || !insideFolder(entry) || !/\.qml$/.test(entry)) return { message: "entry must be a .qml file inside the extension folder" }
@@ -114,7 +114,7 @@ function placeholder(manifest) {
 
 // --------------------------------------------------------------- listing
 // One record per extension for the screen. entries: the registry's entries
-// (source "extension"); enabledIn(id): Keystroke's switch; problems: [{ id, message }];
+// (source "extension"); enabledIn(id): nixarchy-menu's switch; problems: [{ id, message }];
 // prefixOf(id): the user's prefix for the extension's first command, "" for the declared one.
 function list(entries, enabledIn, problems, prefixOf) {
   var trouble = ({})
@@ -136,7 +136,7 @@ function list(entries, enabledIn, problems, prefixOf) {
 }
 function iconOf(e) { return { icon: e.icon || ICON, iconFont: e.iconFont || "", iconSource: e.iconSource || "", tint: e.tint || "" } }
 
-// Keystroke's switch is a plain setting effect; the host writes it, the
+// nixarchy-menu's switch is a plain setting effect; the host writes it, the
 // registry loads or destroys the service, and the screen is queried again.
 function enableEffect(id, value) {
   return { type: "setting", path: ["providers", id], key: "enabled", value: !!value, schema: { key: "enabled", type: "boolean" } }
@@ -149,7 +149,7 @@ function enableConfirm(e) { return "Turn on " + e.name + "?" }
 var ENABLE_LABELS = { confirmText: "Turn on", cancelText: "Keep off" }
 function enableDetail(e) {
   if (e.local) return "This is a local folder in " + e.dir + " that nobody has reviewed. It will run inside your shell with your permissions. Run it at your own risk, and check its code first."
-  return "This extension was automatically checked and reviewed before it shipped with Keystroke, and it runs inside your shell with your permissions. Nonetheless, run it at your own risk. It's recommended to check the extension code first."
+  return "This extension was automatically checked and reviewed before it shipped with nixarchy-menu, and it runs inside your shell with your permissions. Nonetheless, run it at your own risk. It's recommended to check the extension code first."
 }
 
 // ------------------------------------------------------------------ setup
@@ -157,12 +157,12 @@ function enableDetail(e) {
 // user asked for it, watches it, and reads its result. The launcher takes
 // one shell string; everything that varies is single-quoted into it.
 function shellQuote(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
-var SETUP_SCRIPT = 'dir="$1"; run="$2"; cd "$dir" || exit 1; echo "Keystroke: running $run in $dir"; echo; "./$run"; code=$?; echo; echo "$run exited with status $code"; exit $code'
+var SETUP_SCRIPT = 'dir="$1"; run="$2"; cd "$dir" || exit 1; echo "nixarchy-menu: running $run in $dir"; echo; "./$run"; code=$?; echo; echo "$run exited with status $code"; exit $code'
 function setupArgv(omarchyPath, e) {
   var run = e.setup ? e.setup.run : ""
   if (!run || !insideFolder(run)) return null
   return [omarchyPath + "/bin/omarchy-launch-floating-terminal-with-presentation",
-          "bash -c " + shellQuote(SETUP_SCRIPT) + " keystroke-setup " + shellQuote(e.dir) + " " + shellQuote(run)]
+          "bash -c " + shellQuote(SETUP_SCRIPT) + " nixarchy-menu-setup " + shellQuote(e.dir) + " " + shellQuote(run)]
 }
 function setupConfirm(e) {
   return "Open a terminal and run " + e.setup.run + " from " + e.dir + "?" + (e.setup.summary ? " " + e.setup.summary : "")
@@ -171,8 +171,8 @@ function setupConfirm(e) {
 // ---------------------------------------------------------------------- rows
 
 function navRow(score, counts) {
-  var sub = counts && counts.total ? counts.on + " of " + counts.total + " on" : "Third-party providers that ship with Keystroke"
-  return { id: "open", title: "Extensions", subtitle: sub, icon: ICON, section: "Keystroke",
+  var sub = counts && counts.total ? counts.on + " of " + counts.total + " on" : "Third-party providers that ship with nixarchy-menu"
+  return { id: "open", title: "Extensions", subtitle: sub, icon: ICON, section: "nixarchy-menu",
            verb: "Open", tier: "item", score: score, order: 8, keywords: "extensions plugins community",
            description: "extensions plugins community providers turn on off enable disable", action: navigate(KEY, "Extensions") }
 }
@@ -183,7 +183,7 @@ function stateText(e) {
 }
 
 function listRow(e) {
-  var origin = e.local ? "local folder" : "ships with Keystroke"
+  var origin = e.local ? "local folder" : "ships with nixarchy-menu"
   var sub = (e.version ? "v" + e.version + " · " : "") + (e.problem ? e.problem : e.enabled ? "On · " + origin : "Off · " + origin)
   var ic = iconOf(e)
   var row = { id: e.id, title: e.name, subtitle: sub, icon: ic.icon, iconFont: ic.iconFont, iconSource: ic.iconSource, tint: ic.tint,
@@ -197,7 +197,7 @@ function listRow(e) {
 }
 
 function guideRow() {
-  return { id: "guide", title: "Write your own", subtitle: "A folder in ~/.local/share/keystroke/extensions runs at once; a pull request ships it to everyone",
+  return { id: "guide", title: "Write your own", subtitle: "A folder in ~/.local/share/nixarchy-menu/extensions runs at once; a pull request ships it to everyone",
            icon: "", section: "Extend", verb: "Open guide", tier: "item", order: 90, keywords: "guide contribute develop write local",
            description: "write develop create contribute extension guide local folder pull request", action: { type: "url", url: GUIDE_URL } }
 }
@@ -207,7 +207,7 @@ function screenRows(query, extensions) {
   var q = String(query || "").trim(), rows = [], i
   for (i = 0; i < extensions.length; i++) rows.push(listRow(extensions[i]))
   if (!extensions.length)
-    rows.push({ id: "none", title: "No extensions found", subtitle: "Keystroke's extensions folder is empty", icon: ICON, section: "Available",
+    rows.push({ id: "none", title: "No extensions found", subtitle: "nixarchy-menu's extensions folder is empty", icon: ICON, section: "Available",
                 verb: "", tier: "item", score: 1, order: 0, disabled: true, action: { type: "noop" } })
   rows.push(guideRow())
   if (!q) for (i = 0; i < rows.length; i++) if (rows[i].score === undefined) rows[i].score = 1
@@ -234,7 +234,7 @@ function detailRows(query, e) {
     rows.push({ id: e.id + "/setup", title: "Run setup", subtitle: e.setup.summary || "Opens a terminal and runs " + e.setup.run, icon: "",
                 section: e.name, verb: "Run", tier: "item", order: 2, keywords: "setup install prepare download build",
                 confirm: setupConfirm(e), confirmText: "Run setup", cancelText: "Not now", action: { type: "extension-setup", id: e.id } })
-  rows.push({ id: e.id + "/settings", title: "Settings", subtitle: e.enabled ? "Keystroke Settings › " + e.name : "Turn the extension on to see its settings",
+  rows.push({ id: e.id + "/settings", title: "Settings", subtitle: e.enabled ? "nixarchy-menu Settings › " + e.name : "Turn the extension on to see its settings",
               icon: "󰒓", section: e.name, verb: "Open", tier: "item", order: 3, action: navigate("settings/" + e.id, e.name) })
   if (e.local)
     rows.push({ id: e.id + "/folder", title: "Open folder", subtitle: e.dir, icon: "", section: e.name, verb: "Open", tier: "item", order: 4,

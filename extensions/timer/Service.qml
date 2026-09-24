@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell
 import "core/Timer.js" as TimerModel
 
-// Timer: the reference extension for the Keystroke command palette.
+// Timer: the reference extension for the nixarchy-menu command palette.
 //
-// This file is the whole extension at runtime. Keystroke creates it inside
+// This file is the whole extension at runtime. nixarchy-menu creates it inside
 // omarchy-shell when the user turns the extension on, injects `shell`,
 // `extension` (the parsed extension.json plus id and dir) and `omarchyPath`,
 // reads `provider`, and destroys the object when the extension is turned off.
@@ -42,7 +42,7 @@ QtObject {
         description: "Path to an audio file played instead of the built-in sound; empty uses the choice above" },
       { key: "notify", type: "boolean", label: "Notify when a timer ends", "default": true },
       { key: "showInBar", type: "boolean", label: "Show the countdown in the bar", "default": true,
-        description: "The soonest timer counts down next to the Keystroke menu button from the moment it starts" }
+        description: "The soonest timer counts down next to the nixarchy-menu menu button from the moment it starts" }
     ],
     query: function(ctx) { return root.query(ctx) },
     activate: function(row, ctx) { return root.activate(row, ctx) },

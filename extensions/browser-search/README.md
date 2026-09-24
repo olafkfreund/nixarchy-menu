@@ -1,6 +1,6 @@
 # Browser search
 
-Search the default browser's saved history and bookmarks from Keystroke. Turn
+Search the default browser's saved history and bookmarks from nixarchy-menu. Turn
 on **Extensions > Browser search > Enabled**, then type words from a page's
 title or URL in the main palette, or use `browser github` to search only the
 browser. Enter opens the URL in the default browser; Ctrl+Enter copies it.
@@ -9,7 +9,7 @@ browser. Enter opens the URL in the default browser; Ctrl+Enter copies it.
 extension's settings, both on by default. Switching either off excludes that
 source from subsequent reads and results. With both off, no browser detection
 or data reads run. The extension itself ships disabled like other extensions.
-Settings live under `providers.browser-search` in Keystroke's configuration;
+Settings live under `providers.browser-search` in nixarchy-menu's configuration;
 the command prefix can also be renamed there.
 
 ## Browsers and matching
@@ -51,7 +51,7 @@ yet checkpointed can be missing until the browser closes.
 
 There are no network calls, persistent indexes, data caches, browser database
 edits, installations or background services. The host opens a URL only when
-you activate its row. Results are not opted into Keystroke's persisted
+you activate its row. Results are not opted into nixarchy-menu's persisted
 frecency. Up to 16 query results stay in the service's memory and are cleared
 on each palette open; disabling the extension destroys the service and stops
 its child process.
@@ -71,7 +71,7 @@ and [Firefox Places schema](https://searchfox.org/mozilla-central/source/toolkit
 ## Verification
 
 ```sh
-bin/keystroke check-extensions extensions/browser-search
+bin/nixarchy-menu check-extensions extensions/browser-search
 python3 -m unittest discover -s extensions/browser-search/tests -p 'test_*.py'
 python3 extensions/browser-search/tests/palette_check.py
 ```

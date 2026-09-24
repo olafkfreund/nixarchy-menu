@@ -8,12 +8,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-palette-matching-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-matching-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git','.claude','.agents','.codex','tests','__pycache__'))
     (work/'qs').symlink_to('/usr/share/omarchy/shell')
-    source = project/'Keystroke.qml'
+    source = project/'NixarchyMenu.qml'
     qml = source.read_text().replace('  id: root\n', '  id: root\n  property alias testMatching: matchingSession\n', 1)
     qml = qml.replace('  PanelWindow {','  Window {\n    transientParent: null\n    width: 1000; height: 800')
     qml = qml.replace('    anchors { top: true; bottom: true; left: true; right: true }\n','')
@@ -45,7 +45,7 @@ ShellRoot {
      catalog:function(ctx) { return test.targetVisible ? [{id:"target",title:"Workspace overview",score:1,action:{type:"noop"}}] : [] }
    }}]
  }
- Keystroke { id: palette; omarchyPath:"/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath:"/usr/share/omarchy" }
  Timer { interval:250; running:true; onTriggered:{
    palette.testMatching.command=["python3",%s]
    test.configure("voice")

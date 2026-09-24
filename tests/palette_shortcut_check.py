@@ -7,12 +7,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-palette-shortcut-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-palette-shortcut-') as temp:
     work = Path(temp)
     project = work/'project'
     shutil.copytree(root, project, ignore=shutil.ignore_patterns('.git','.claude','.agents','.codex','tests','__pycache__'))
     (work/'qs').symlink_to('/usr/share/omarchy/shell')
-    source = project/'Keystroke.qml'
+    source = project/'NixarchyMenu.qml'
     qml = source.read_text()
     qml = qml.replace('  id: root\n', '''  id: root
   property alias testSearch: search
@@ -33,7 +33,7 @@ ShellRoot {
  property int stage: 0
  property var activated: []
  function check(ok,msg) { if(!ok) { console.log("FAIL",msg); Qt.quit(); throw Error(msg) } }
- Keystroke { id: palette; omarchyPath:"/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath:"/usr/share/omarchy" }
  TestCase { id: keys; name:"KeyDriver"; when:false }
  QtObject {
    id: fakeApps

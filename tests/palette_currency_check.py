@@ -5,7 +5,7 @@ A copy of the project and a fake HOME with the extension turned on. `curl` on
 PATH is a script that logs every call and answers what a mode file says: first
 an empty body with exit 0 (a failure the service must record, then wait
 RETRY_MS before trying again rather than downloading on every query), then a
-real Frankfurter table. The palette is driven through Keystroke.qml itself.
+real Frankfurter table. The palette is driven through NixarchyMenu.qml itself.
 """
 import json
 import os
@@ -16,19 +16,19 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 
-with tempfile.TemporaryDirectory(prefix="keystroke-palette-currency-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-palette-currency-") as temp:
     work = Path(temp)
     project = work / "project"
     shutil.copytree(root, project, ignore=shutil.ignore_patterns(".git", ".claude", ".agents", ".codex", "tests", "__pycache__", "experiments"))
     (work / "qs").symlink_to("/usr/share/omarchy/shell")
-    source = project / "Keystroke.qml"
+    source = project / "NixarchyMenu.qml"
     qml = source.read_text()
     qml = qml.replace("  PanelWindow {", "  Window {\n    transientParent: null\n    width: 1000; height: 800")
     qml = qml.replace("    anchors { top: true; bottom: true; left: true; right: true }\n", "")
     source.write_text("\n".join(line for line in qml.splitlines() if "exclusionMode:" not in line and "WlrLayershell." not in line))
 
     (work / ".config/omarchy").mkdir(parents=True)
-    (work / ".config/omarchy/keystroke.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}, "providers": {"currency": {"enabled": True, "preferredCurrency": "EUR"}}}))
+    (work / ".config/omarchy/nixarchy-menu.json").write_text(json.dumps({"version": 1, "matching": {"mode": "off"}, "providers": {"currency": {"enabled": True, "preferredCurrency": "EUR"}}}))
 
     fake = work / "bin"
     fake.mkdir()
@@ -60,10 +60,10 @@ ShellRoot {
  function row(title) { return palette.rows.filter(function(r) { return r.title === title })[0] || null }
  function service() { var s = palette.registry.services["currency"]; return s ? s.instance : null }
  function curlCalls() { return String(curlLog.text()).split("\\n").filter(function(l) { return l.trim() }).length }
- Keystroke { id: palette; omarchyPath: "/usr/share/omarchy" }
+ NixarchyMenu { id: palette; omarchyPath: "/usr/share/omarchy" }
  FileView { id: curlLog; path: "''' + str(log) + '''"; printErrors: false }
  FileView { id: curlMode; path: "''' + str(mode) + '''"; printErrors: false }
- FileView { id: rates; path: "''' + str(work / ".cache/keystroke/currency/rates.json") + '''"; printErrors: false }
+ FileView { id: rates; path: "''' + str(work / ".cache/nixarchy-menu/currency/rates.json") + '''"; printErrors: false }
  Timer { interval: 100; repeat: true; running: true; onTriggered: {
    curlLog.reload()
    switch (test.stage) {
@@ -106,7 +106,7 @@ ShellRoot {
      var text = String(rates.text())
      if (!text) return
      var cache = JSON.parse(text)
-     test.check(cache.version === 1 && cache.base === "EUR" && cache.rates.TRY.rate === 60, "the table landed in ~/.cache/keystroke/currency/rates.json")
+     test.check(cache.version === 1 && cache.base === "EUR" && cache.rates.TRY.rate === 60, "the table landed in ~/.cache/nixarchy-menu/currency/rates.json")
      console.log(test.failures ? "FAIL palette currency" : "PASS palette currency")
      Qt.quit(); test.stage = 6; return
    }

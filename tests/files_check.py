@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix="keystroke-files-") as temp:
+with tempfile.TemporaryDirectory(prefix="nixarchy-menu-files-") as temp:
     work = Path(temp)
     for folder in ["providers", "core"]:
         shutil.copytree(root / folder, work / folder)

@@ -8,7 +8,7 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 omarchy = Path(os.environ.get('OMARCHY_PATH', '/usr/share/omarchy'))
-with tempfile.TemporaryDirectory(prefix='keystroke-apps-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-apps-') as temp:
     work = Path(temp)
     shutil.copytree(root / 'core', work / 'core')
     (work / 'providers').mkdir()

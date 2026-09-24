@@ -4,7 +4,7 @@ import qs.Commons
 import qs.Ui as Ui
 import "core/Parser.js" as Parser
 
-// The countdown while input is blocked. Keystroke loads this component
+// The countdown while input is blocked. nixarchy-menu loads this component
 // over its results (`provider-view`), injects `host`, and calls
 // focusInput(); colors and sizes come from the host so the view keeps the
 // palette's theme and type scale. State comes from the service: how many
@@ -90,7 +90,7 @@ FocusScope {
     NumberAnimation { from: 0.55; to: 1; duration: 400; easing.type: Easing.InOutQuad }
   }
 
-  // A current Keystroke paints the backdrop behind this view, inside the
+  // A current nixarchy-menu paints the backdrop behind this view, inside the
   // card border; only an older host needs one from us.
   Rectangle {
     anchors.fill: parent

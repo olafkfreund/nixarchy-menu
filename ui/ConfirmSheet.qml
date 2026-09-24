@@ -2,7 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 
-// Keystroke's confirmation: a sheet that rises from the bottom of the card
+// nixarchy-menu's confirmation: a sheet that rises from the bottom of the card
 // under an accent rule, dimming the results above it. The question, an
 // optional note in the muted colour (turning an extension on says what was
 // checked and that the code runs at the user's own risk), and the two keys

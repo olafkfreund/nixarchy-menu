@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-with tempfile.TemporaryDirectory(prefix='keystroke-matching-session-') as temp:
+with tempfile.TemporaryDirectory(prefix='nixarchy-menu-matching-session-') as temp:
     work = Path(temp)
     shutil.copytree(root / 'matching', work / 'matching')
     fake = work / 'worker.py'

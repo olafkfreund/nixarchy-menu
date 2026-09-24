@@ -167,7 +167,7 @@ function soundPath(settings, home) {
 // argv that plays the sound, or null when there is nothing to play.
 function soundArgv(settings, home) {
   var path = soundPath(settings, home)
-  return path ? ["bash", "-c", SOUND_SCRIPT, "keystroke-timer-sound", path] : null
+  return path ? ["bash", "-c", SOUND_SCRIPT, "nixarchy-menu-timer-sound", path] : null
 }
 
 // -------------------------------------------------------------------- bar

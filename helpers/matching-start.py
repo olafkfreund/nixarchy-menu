@@ -173,7 +173,7 @@ def prepare_python_runtime(data, env):
         emit({'type': 'status', 'message': 'Installing matching runtime'})
         uv = shutil.which('uv')
         if not uv:
-            raise RuntimeError('Smart Match needs cargo (Rust) or uv (Python); install one and retry in Keystroke Settings')
+            raise RuntimeError('Smart Match needs cargo (Rust) or uv (Python); install one and retry in nixarchy-menu Settings')
         run([uv, 'venv', '--clear', '--python', sys.executable, str(runtime)], env, 'Could not install the matching runtime; check your connection and uv installation')
         run([uv, 'pip', 'sync', '--python', str(runtime / 'bin/python'), '--require-hashes', str(lockfile)], env, 'Could not install the matching runtime; check your connection and uv installation')
         marker.write_text(fingerprint)
@@ -186,7 +186,7 @@ def main():
     parser.add_argument('--install-only', action='store_true')
     parser.add_argument('--engine', choices=['auto', 'native', 'python'], default='auto', help='auto prefers the compiled engine')
     parser.add_argument('--engine-fingerprint', action='store_true', help='print the engine source fingerprint and exit')
-    parser.add_argument('--data-dir', type=Path, default=Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'keystroke/matching')
+    parser.add_argument('--data-dir', type=Path, default=Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'nixarchy-menu/matching')
     args = parser.parse_args()
     if args.engine_fingerprint:
         print(engine_fingerprint())
