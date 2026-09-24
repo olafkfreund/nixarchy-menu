@@ -134,7 +134,7 @@ A provider with something to show next to the menu button in the bar calls `host
 
 ## Scopes and settings
 
-Navigating into a provider gives it scope `<key>`; deeper scopes are `<key>/<sub>`. Settings are stored under `providers.<key>` in `~/.config/omarchy/nixarchy-menu.json`; the `enabled` and `prefix` keys are reserved (`prefix` exists only for a provider that declares commands). Screens are generated from `settings`; no UI code is needed. Every screen, setting and enum choice is also searchable from the palette root through its breadcrumb (nixarchy-menu Settings › <name> › <label> › <choice>); the setting `key` and enum option values count as identifiers, so a key like `provider` makes `prefp` reach a setting labelled "Preferred assistant".
+Navigating into a provider gives it scope `<key>`; deeper scopes are `<key>/<sub>`. Settings are stored under `providers.<key>` in `~/.config/omarchy/nixarchy-menu.json`; the `enabled` and `prefix` keys are reserved (`prefix` exists only for a provider that declares commands). Screens are generated from `settings`; no UI code is needed. Every screen, setting and enum choice is also searchable from the palette root through its breadcrumb (nixarchy-menu Settings › <name> › <label> › <choice>); the setting `key` and enum option values count as identifiers, so a key like `searchMode` makes `filmod` reach a setting labelled "Search in the main palette".
 
 ## Stability
 

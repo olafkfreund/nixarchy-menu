@@ -160,3 +160,16 @@ and `tests/tst_settingstree.qml`.
 - Forced `--rebuild` of `quickshell`: 19/19. codex_session was deleted.
 - QML: 264 passed, 0 failed.
 - `git grep -i codex` leaves only the AGENTS id, the README upgrade note, the ignore patterns and `matching/`.
+
+### Codex review (gpt-5.6-luna, read-only)
+- **Result:** "No actionable defects … remaining stale references are documentation-only."
+- **Fixed:** the stale Settings examples in `docs/architecture.md:97` and `docs/providers.md:137` now use the Files example asserted in `tst_settingstree` (`nixsefimo`, `sealit`, `filmod`/`searchMode`).
+- **Left alone:** `tests/tst_match.qml:131` keeps `prefp` as one query in a timing list, which is harmless.
+
+### Razer (R3), in progress
+- **Confirmed:** the build installed without `codex/`. A query shows Ask Nixi, Ask Claude Code, Search Google in that order. Nothing launched without confirmation.
+- **Not caused by #4:**
+  - A Quickshell segfault at 17:17 in `IpcHandler::updateRegistration()` on plugin reload. 10 of razer's 13 crash reports today have it, from 13:15 on. Filed as nixarchy#958.
+  - Shell restarts at 17:19–17:24, from another session rebuilding razer (system generations 2950–2952 at 17:13–17:21, and a Home Manager activation at 17:22).
+- **Test lesson:** once Smart Match loads, 21 fuzzy rows come before the hand-off rows. Look rows up by title for `activateAt`, never by a fixed index.
+- **Still to do** once razer is quiet: the confirm sheet, the launch argv, no agent, not installed, and `?` with Ask Nixi.
