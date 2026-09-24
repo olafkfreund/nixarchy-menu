@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 issue: 2
 intent: intent/2026-09-24-2-trim-upstream-surface.md
 amends: approved version at b433b08
