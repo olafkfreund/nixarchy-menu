@@ -183,3 +183,7 @@ Verify: `jq . keystroke.example.json` succeeds, and `bash -n bin/keystroke` succ
   - "Smart Match stays out" is removed from Routing.
   - The `optionLabels` paragraph is kept under a new "Enum option labels" heading, because it was not about the catalog.
 - The rsync `--exclude assets --exclude experiments` flags in `bin/keystroke` stay. They are harmless.
+
+### B: menumodel
+- `omarchy/LICENSE` never existed. `MenuModel.js` was the only file in `omarchy/`, so the directory is gone. Attribution now lives in the root `README.md` License line (commit C).
+- `catalogVisible()` is deleted with `catalog()`, because it had no other caller.

@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Commons
-import "../omarchy/MenuModel.js" as MenuModel
+import "file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js" as MenuModel
 import "../core/Match.js" as Match
 
 // The complete Omarchy menu as a Keystroke provider. Parsing, merging, routes,
@@ -58,7 +58,6 @@ Item {
         description: "Confirm shutdown, reboot, logout, removal and config resets" }
     ],
     query: function(ctx) { return root.query(ctx) },
-    catalog: function(ctx) { return root.catalog(ctx) },
     opened: function() { root.evaluateGuards() }
   })
 
@@ -328,35 +327,6 @@ Item {
       descriptionKey: [entry.action, entry.target, entry.provider].join("\u001f"),
       confirm: entry.kind === "action" && confirmDestructive && root.isDestructive(entry.id) ? "Run “" + entry.label + "”?" : ""
     }
-  }
-
-  function catalogVisible(entry, depth) {
-    if (!entry || (depth || 0) >= 32) return false
-    var current = entry, visited = 0
-    while (current && visited++ < 32) {
-      if (current.when && root.whenResults[current.id] !== true) return false
-      current = root.item(current.parent)
-    }
-    if (current) return false
-    if (entry.kind === "action" || entry.provider) return true
-    var target = entry.kind === "link" ? entry.target : entry.id
-    for (var i = 0; i < root.itemOrder.length; i++) {
-      var child = root.item(root.itemOrder[i])
-      if (child && child.parent === target && root.catalogVisible(child, (depth || 0) + 1)) return true
-    }
-    return false
-  }
-
-  function catalog(ctx) {
-    if (!root.rowsLoaded) return []
-    var active = ctx.sub && root.item(ctx.sub) ? ctx.sub : "root", rows = []
-    for (var i = 0; i < root.itemOrder.length; i++) {
-      var entry = root.item(root.itemOrder[i])
-      if (!entry || entry.id === "root" || !root.catalogVisible(entry)) continue
-      if (active !== "root" && !MenuModel.isDescendantOf(root.items, entry.id, active)) continue
-      rows.push(root.rowFor(entry, root.relativeTo(entry.id, active).parent || entry.description, 1, ctx.settings.confirmDestructive !== false))
-    }
-    return rows
   }
 
   function query(ctx) {
