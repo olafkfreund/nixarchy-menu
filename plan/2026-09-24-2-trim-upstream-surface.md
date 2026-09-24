@@ -261,3 +261,11 @@ lead does them alone: they are sequential and small.
   - QML: 265 passed, 0 failed.
   - qmllint: 484 lines, 0 new.
   - Smart Match code and tests match 6a99b6c apart from the two MenuModel import lines.
+- Razer (beb6ee4):
+  - Smart Match is Ready.
+  - `sysshut`, `ffx`, `2m in feet` and `ask` pass.
+  - Typed "27 plus 90" gives 117.
+  - "launch chrome" offers Chromium.
+  - The Matching settings are back.
+  - Voice "27 plus 90" gives 117, confirmed by the user.
+  - Razer was restored from the backup afterwards (1.4.2 disabled, stock menu active, state identical). voxtype stays set up.
