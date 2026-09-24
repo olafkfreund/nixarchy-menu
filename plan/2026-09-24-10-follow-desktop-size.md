@@ -68,3 +68,8 @@ spec: spec/2026-09-24-10-follow-desktop-size.md
 
 ## Rollback
 Revert the commit. Geometry returns to today's fixed size.
+
+## Razer results (2026-09-24, eDP-1 1920×1080, compact density, 26px top bar)
+- **Scale 1:** the card measured about 766×581 at (577, 210). `cardRect` gives 768×583 at (576, 209), so it matches within the 1px border.
+- **Scale 2** (logical 960×540): the card measured 1280×963 physical at y=85, which is 640×482 logical at y≈42, bottom 524. That's exactly the compact `cardRect`. It clears the bar, and the text scales with the output.
+- **Gotcha:** Hyprland 0.56 with Lua config has no `hyprctl keyword monitor`. The scale was set with `hyprctl eval 'hl.monitor({...})'` and restored to 1.
