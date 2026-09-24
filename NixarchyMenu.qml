@@ -257,7 +257,7 @@ Item {
     if (root.configError) throw new Error(root.configError)
     root.config = next
     root.paletteSettings = Settings.values(next, ["palette"], root.paletteSchema)
-    configFile.setText(Settings.serialize(next))
+    if (root.stateReady) configFile.setText(Settings.serialize(next))
   }
   FileView {
     id: configFile
@@ -403,13 +403,15 @@ Item {
     onLoaded: root.usage = Frecency.parse(text())
     onLoadFailed: root.usage = ({})
   }
-  // Copies the pre-rename state once and creates the state dir; stateReady is
-  // set whatever the exit code, the script notifies on failure itself.
+  // Copies the pre-rename state once and creates the state dir. A failed copy
+  // keeps stateReady false for this session: nothing is read or written at the
+  // new paths, so the next start can still copy the old state (the migration
+  // never overwrites a path that exists). The script notifies on failure.
   Process {
     id: migrateState
     command: ["sh", Qt.resolvedUrl("helpers/migrate-state.sh").toString().replace("file://", "")]
     running: true
-    onExited: { root.stateReady = true; providerRegistry.scan() }
+    onExited: function(code) { root.stateReady = code === 0; providerRegistry.scan() }
   }
   function remember(row) {
     if (!row.remember) return
@@ -418,7 +420,7 @@ Item {
     var queryKey = Frecency.queryKey(row.providerKey, row.id, root.voiceRawText || search.text, root.scope)
     if (queryKey) next = Frecency.record(next, queryKey, now)
     root.usage = next
-    usageFile.setText(Frecency.serialize(root.usage))
+    if (root.stateReady) usageFile.setText(Frecency.serialize(root.usage))
   }
   function bonusFor(row) {
     if (!row.remember) return 0
@@ -1192,7 +1194,7 @@ Item {
     else if (type === "copy") Quickshell.execDetached(["wl-copy", "--", String(effect.text === undefined ? "" : effect.text)])
     else if (type === "app" && root.appLibrary) root.appLibrary.launch(effect.id, effect.name)
     else if (type === "edit") {
-      if (!root.configError) configFile.setText(Settings.serialize(root.config))
+      if (!root.configError && root.stateReady) configFile.setText(Settings.serialize(root.config))
       Util.execArgv(["xdg-open", root.configPath])
     }
   }

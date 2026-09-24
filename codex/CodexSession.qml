@@ -70,7 +70,7 @@ Item {
     if (!Policy.safeId(threadId)) return
     var row = {id: threadId, title: title, cwd: cwd, mode: mode, draft: draft, updated: Date.now()}
     recent = [row].concat(recent.filter(x => x.id !== threadId)).slice(0, 40)
-    historyFile.setText(JSON.stringify({version: 1, recent: recent}, null, 2) + "\n")
+    if (historyFile.path) historyFile.setText(JSON.stringify({version: 1, recent: recent}, null, 2) + "\n")
     changed()
   }
   function warm() { rpc.ensure() }

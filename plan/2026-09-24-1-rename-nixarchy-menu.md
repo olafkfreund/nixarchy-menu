@@ -253,3 +253,12 @@ and `.github/PULL_REQUEST_TEMPLATE.md`.
 - README: the "Codex inside Keystroke" section is folded, verbatim apart from the name, into Providers. "What it does" became the "keys and what you can type" section. "Learn nixarchy-menu" says it opens this README. The Enable section notes that the old Keystroke state is copied on first start and never changed.
 - The fuzzy example in the README and `docs/architecture.md:108` is `nixsepro`, matching G's fixtures.
 - Links to `evindor/keystroke-calpad` (someone else's repo) are kept as credit.
+
+### Review fix (Codex review, gpt-5.6-luna, P1)
+- **The problem:** the spec set `stateReady` "whatever the exit code". After a failed copy, a settings change or a frecency write then created the new file from defaults. The next start's migration skips an existing path, so the old Keystroke state was never copied: the data loss the intent forbids.
+- **Fix:**
+  - `stateReady = code === 0`.
+  - The three write sites (`saveConfig`, `remember`, the "edit" action) write only when `stateReady`.
+  - `CodexSession.saveRecent` writes only when `historyFile.path` is set.
+- **What happens after a failed copy:** the palette runs on defaults for that session, saves nothing, sends the existing notice, and the next start retries.
+- **Result:** QML 266/266; qmllint 0 new warnings.
