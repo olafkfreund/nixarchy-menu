@@ -199,11 +199,13 @@ ShellRoot {
      test.stage = 9; return
    case 9:
      if (!palette.config.providers || !palette.config.providers.translate || palette.config.providers.translate.targets !== "en,fr,de") return
-     test.check(test.svc.targets.join(",") === "en,fr,de", "service sees the new targets: " + test.svc.targets.join(","))
+     // The service gets settings on the next query, so wait for the re-queried rows before asking it.
      if (palette.rows[2].title !== "German") return
+     test.check(test.svc.targets.join(",") === "en,fr,de", "service sees the new targets: " + test.svc.targets.join(","))
      test.check(palette.rows[2].accessory === "✓", "German is now chosen")
      palette.cancel()
-     palette.applyConfigText(config([]))
+     // Through the disk, as the product does: a late reload of stage 81's save then re-reads this "off" config.
+     palette.saveConfig(JSON.parse(config([])))
      test.stage = 10; return
    case 10:  // off: the service is destroyed
      if (entry("translate").loaded) return

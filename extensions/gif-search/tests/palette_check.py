@@ -65,6 +65,7 @@ ShellRoot {
  property int stage: 0
  property bool busy: false   // a stage timer is mid-tick (see its guard)
  property int ticks: 0
+ property int slowRev: -1
  property int failures: 0
  property var svc: null
  property var input: null
@@ -129,9 +130,9 @@ ShellRoot {
    case 4:
      if (svc.loading) return
      check(svc.items[0].id === "24" && !svc.more, "second page offset")
-     svc.search("slow"); test.stage++; return
-   case 5:
-     if (++test.ticks < 4) return
+     svc.search("slow"); test.slowRev = svc.revision; test.stage++; return
+   case 5:   // "slow" is on the wire once its debounce fired fetch()
+     if (svc.requestedRevision !== test.slowRev) return
      svc.search("new"); test.stage++; return
    case 6:
      if (svc.loading) return

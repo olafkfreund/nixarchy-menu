@@ -42,6 +42,12 @@ spec: spec/2026-09-25-18-harness-load-flakes.md
 2. **translate fix:** stage 9 uses `saveConfig`, and the temporary logging is
    removed.
    → Verify: 5 of 5 pinned under stress, and the idle run passes.
+   - **Deviation, found in step 1:** 3 of the 10 stressed runs failed
+     earlier, at stage 9's `service sees the new targets: en,fr`. The service
+     gets its settings only on the next `query(ctx)` (`Service.qml:213`), and
+     under load the check ran before the palette re-queried. Stage 9 now
+     waits for the re-queried rows (`rows[2]` is German) **before** that
+     check. Both assertions are unchanged; only their order moved.
 3. **gif-search fix:** the `slowRev` wait.
    → Verify: before the fix, reproduce at least 1 failure in 5 under stress,
    recorded. After it, 5 of 5.

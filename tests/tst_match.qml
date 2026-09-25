@@ -129,12 +129,25 @@ TestCase {
             titles.push("Item number " + i + " with some words")
         }
         var queries = ["e", "se", "itm", "setnum", "prefp", "xq"]
-        var started = Date.now(), hits = 0
+        // Load slows both loops alike, so the guard is Match against a plain indexOf scan of the
+        // same fields in the same run: it catches algorithmic blow-ups, not a busy machine.
+        var started = Date.now(), scanned = 0
         for (var r = 0; r < 20; r++)
             for (var q = 0; q < queries.length; q++)
-                for (var j = 0; j < titles.length; j++) if (Match.match(queries[q], titles[j], "alias words", paths[j], "a longer description of the item")) hits++
-        var perKeystroke = (Date.now() - started) / (20 * queries.length)
-        console.log("Match: " + perKeystroke.toFixed(2) + " ms per keystroke over 700 rows (" + hits / 20 + " hits per six queries)")
-        verify(perKeystroke < 40)
+                for (var j = 0; j < titles.length; j++) {
+                    var s = queries[q]
+                    if (titles[j].indexOf(s) >= 0 || "alias words".indexOf(s) >= 0 || paths[j].indexOf(s) >= 0 || "a longer description of the item".indexOf(s) >= 0) scanned++
+                }
+        var baselineTime = Math.max(1, Date.now() - started)
+        started = Date.now()
+        var hits = 0
+        for (r = 0; r < 20; r++)
+            for (q = 0; q < queries.length; q++)
+                for (j = 0; j < titles.length; j++) if (Match.match(queries[q], titles[j], "alias words", paths[j], "a longer description of the item")) hits++
+        var matchTime = Date.now() - started
+        var perKeystroke = matchTime / (20 * queries.length)
+        console.log("Match: " + perKeystroke.toFixed(2) + " ms per keystroke over 700 rows (" + hits / 20 + " hits per six queries), "
+                    + (matchTime / baselineTime).toFixed(1) + "x an indexOf scan (" + matchTime + " / " + baselineTime + " ms)")
+        verify(matchTime / baselineTime < 360)   // K: 3x the worst of 10 idle runs (88.7-118.8x), see plan/2026-09-25-18-harness-load-flakes.md
     }
 }
