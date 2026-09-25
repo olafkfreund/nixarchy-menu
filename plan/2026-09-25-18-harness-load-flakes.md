@@ -76,3 +76,66 @@ spec: spec/2026-09-25-18-harness-load-flakes.md
 Revert the commit. The three checks go back to their timing-dependent
 versions. There is no product code change unless step 1 turns up a real hang,
 in which case this plan stops.
+
+## Results
+
+Run on p620 on 2026-09-25. Stress was `taskset -c 0 stress-ng --cpu 4` with every
+check pinned to core 0, and stress-ng was killed by its PID after each batch.
+Each harness run used a fresh temp `HOME` and `OMARCHY_PATH` set to the flake's
+omarchy input, inside `nix develop`.
+
+### Step 1: translate evidence
+
+- **Before the fix:** 6 of 10 passed under stress.
+  - **Run 8** reproduced `FAIL timeout at stage 10`. Stage 10 began at
+    `…281757`, and a config reload landed at `…281777`, 20 ms **after**
+    stage 9's `applyConfigText(config([]))`. The reloaded text was
+    `{"providers":{"translate":{"enabled":true,"targets":"en,fr,de"}}}`,
+    which is stage 81's save. **The race is confirmed. It is not an unload
+    hang.**
+  - **Runs 3, 7 and 10** failed earlier, at stage 9 with `service sees the
+    new targets: en,fr`. This is the second race, the deviation recorded
+    under step 2.
+  - In the passing runs, no reload landed after the first load.
+- **After the fix:** 10 of 10 passed under stress (two batches of 5), and
+  the idle run passed.
+
+### Step 3: gif-search
+
+- **Before the fix:** 15 of 15 passed under stress (batches of 5 and 10).
+  **The failure did not reproduce here.** The intent reported 4 of 5
+  passing.
+  - The race is still in the code. Four 100 ms ticks run against the
+    300 ms debounce, and a tick that fires late makes the next ones due
+    early.
+  - It was fixed as planned.
+- **After the fix:** 5 of 5 passed under stress, and the idle run passed.
+
+### Step 4: the keystroke-speed test
+
+**Idle ratios** (Match time over the indexOf scan, 10 runs): 108.5, 110.1,
+118.8, 95.5, 90.9, 88.7, 102.1, 96.5, 105.1, 101.3.
+- The idle baseline scan took 19–23 ms.
+- **K = 360**, which is 3 × 118.8 ≈ 356, rounded up.
+
+**Under stress:**
+- **Before the fix:** the old `perKeystroke < 40` would have failed **10 of
+  10**. Matching took 95–111 ms per keystroke. These figures come from the
+  same loop, timed in the measurement runs.
+- **After the fix:** 10 of 10 passed, with ratios of 94.3–107.1 and a
+  baseline of 116–137 ms. Load moves both sides of the ratio together.
+
+**Injected slowdown** (temporary, then reverted; `core/Match.js` is
+unchanged):
+- **A quadratic loop over `title`** (about 33 characters) made Match about
+  2.7× slower. The ratio was 280.0, below 360, so **the test still passed**.
+  The ceiling of `K` is that it trips only above about 3.6× the mean idle
+  ratio, so regressions smaller than that pass.
+- **A quadratic loop over all four fields** (about 130 characters, a 30×
+  regression) gave a ratio of 3079.0, and the test **failed** (`verify()`
+  returned FALSE).
+
+### Step 5
+
+- The QML suite passed idle: 277 passed, 0 failed.
+- `nix flake check` passed.
