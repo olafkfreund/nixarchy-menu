@@ -51,8 +51,8 @@ Item {
   }
   // The hotkey's second tap reaches us as the shell's close(): with the voice
   // integration on, that tap starts dictation and a third one stops it; Esc
-  // and the scrim still close. (An explicit `omarchy menu close` takes the
-  // same path; nothing in Omarchy calls it.)
+  // and the scrim still close. (nixarchy's `omarchy menu close` calls
+  // dismiss() instead; see below.)
   function close() {
     if (root.opened && !root.dmenuActive && root.voiceEnabled && !root.confirmPending) {
       if (voice.phase === "starting" || voice.phase === "listening") { root.voiceStop(); return }
@@ -61,6 +61,10 @@ Item {
     }
     root.cancel()
   }
+  // A scripted close: nixarchy's `omarchy menu close` calls this over IPC
+  // (shell call omarchy.menu dismiss) so a script never starts dictation.
+  // close() stays the hotkey's second tap, voice included.
+  function dismiss(arg) { root.cancel(); return "ok" }
   function refresh() { providerRegistry.bundled[0].reload(); root.requery(); return "ok" }
   function ping() { return "ok" }
   // Hyprland long-press bind on the hotkey: the key is still down 250 ms

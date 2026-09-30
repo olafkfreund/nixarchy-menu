@@ -3,10 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Checks only: shell/Commons, shell/Ui and shell/plugins/menu/MenuModel.js
-    # are the same tree Omarchy loads at runtime. Not a runtime dependency of
-    # the plugin itself, and never nixarchy (that would be circular, since
-    # nixarchy takes this repo as an input).
+    # The checks use the whole tree (shell/Commons, shell/Ui and
+    # shell/plugins/menu/MenuModel.js), the same one Omarchy loads at
+    # runtime. The `plugin` output carries only one file of it,
+    # MenuModel.js, through `menuModel` below -- never the 128 MiB tree, and
+    # never nixarchy (that would be circular, since nixarchy takes this repo
+    # as an input).
     omarchy = {
       url = "github:basecamp/omarchy/v4.0.4";
       flake = false;
@@ -41,6 +43,13 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+
+          # The one Omarchy file the plugin imports, copied out of the pinned tree:
+          # referencing ${omarchy} itself would put its 128 MiB into every closure.
+          menuModel = pkgs.runCommandLocal "omarchy-menu-model" { } ''
+            test -f ${omarchy}/shell/plugins/menu/MenuModel.js
+            install -Dm444 ${omarchy}/shell/plugins/menu/MenuModel.js "$out/MenuModel.js"
+          '';
 
           matching-engine = pkgs.rustPlatform.buildRustPackage {
             pname = "keystroke-matching";
@@ -125,6 +134,9 @@
                   --replace-fail '@matchingEngine@' '${matching-engine}/bin/keystroke-matching' \
                   --replace-fail '@modelSmall@' '${model-small}' \
                   --replace-fail '@modelLarge@' '${model-large}'
+
+                substituteInPlace "$out/providers/OmarchyMenu.qml" \
+                  --replace-fail 'file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js' 'file://${menuModel}/MenuModel.js'
               '';
         in
         {
@@ -168,6 +180,7 @@
                   pkgs.jq
                   pkgs.findutils
                   pkgs.gnugrep
+                  pkgs.gnused
                 ];
               }
               ''
@@ -194,6 +207,12 @@
                   echo "nixarchy-menu would fail nixarchy's validatedPlugins check" >&2
                   exit 1
                 fi
+                if grep -n '/run/current-system' ${plugin}/providers/OmarchyMenu.qml >&2; then
+                  echo "OmarchyMenu.qml imports MenuModel.js from the system profile, not the build-time store path" >&2
+                  exit 1
+                fi
+                model=$(sed -n 's|^import "file://\(/nix/store/[^"]*/MenuModel\.js\)".*|\1|p' ${plugin}/providers/OmarchyMenu.qml)
+                [ -n "$model" ] && [ -f "$model" ] || { echo "OmarchyMenu.qml's MenuModel.js import does not resolve: '$model'" >&2; exit 1; }
                 touch $out
               '';
 

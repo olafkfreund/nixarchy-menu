@@ -141,7 +141,7 @@ Open a pull request against `dev` (the branch the next release is assembled on; 
 - **A new bundled provider**: add `providers/<Name>.qml` with `id`, `name`, `icon`, `color`, `description`, `settings`, `query`; register it in `providers/Registry.qml` (`bundled` list, in display order); put logic in `core/<Name>.js` with `tests/tst_<name>.qml`; document it in `README.md` (Using it) and `docs/architecture.md`. Bundled providers default to enabled.
 - **A change to the contract** (`docs/providers.md`): adding an optional field keeps `apiVersion: 1`; anything that changes the meaning of an existing field bumps it, and `Registry.qml` must keep loading the previous version for one Omarchy release.
 - **The host** (`NixarchyMenu.qml`): new effects go in `perform()`, new keys in the search field's `Keys.onPressed`, new IPC methods next to `ping()`/`inspect()`. Keep the dmenu protocol byte-compatible with Omarchy's `omarchy-menu-select`/`omarchy-menu-input`.
-- **Omarchy's menu model** is the shell's own `$OMARCHY_PATH/shell/plugins/menu/MenuModel.js`, imported by `providers/OmarchyMenu.qml` from `file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js`. There is no vendored copy; never fork its behaviour.
+- **Omarchy's menu model** is the shell's own `$OMARCHY_PATH/shell/plugins/menu/MenuModel.js`, imported by `providers/OmarchyMenu.qml` from `file:///run/current-system/sw/share/omarchy/shell/plugins/menu/MenuModel.js`, which the Nix `plugin` output rewrites at build time to a store copy of the same file from the pinned Omarchy input. There is no vendored copy; never fork its behaviour.
 - Commit messages: one line in the imperative, then why.
 
 ## Security and trust
