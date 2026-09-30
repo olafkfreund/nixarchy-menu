@@ -78,6 +78,14 @@ ShellRoot {
     palette.testTransfer.copyCommand = ["python3", %s, "clipboard"]
     palette.testTransfer.pasteCommand = ["python3", %s, "paste"]
     palette.open('{}')
+    palette.dismiss('{}')
+    test.check(!palette.opened && palette.testVoice.phase === "idle", "dismiss() closes without starting dictation")
+    palette.open('{}')
+    palette.close()
+    test.check(palette.opened && palette.testVoice.phase === "listening", "close() as the second tap still starts dictation")
+    palette.cancel()
+    test.check(!palette.opened && palette.testVoice.phase === "idle", "cancel() stops the tap's recording")
+    palette.open('{}')
     palette.perform({type:"dictate"}, {title:"Dictate to Clipboard"})
     test.check(palette.dictationMode && palette.testVoice.phase === "listening", "extension starts recording")
     palette.testVoice.partial(test.text)
