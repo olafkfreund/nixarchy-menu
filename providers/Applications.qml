@@ -29,7 +29,14 @@ Item {
   })
 
   Connections {
-    target: root.library
+    // The library can arrive while an asynchronous parent is still incubating
+    // this provider. Keep the target null until a later event-loop turn so Qt
+    // can finalize the handler before connecting it (see issue #28).
+    property bool targetReady: false
+    target: targetReady ? root.library : null
+    function enableTarget() { targetReady = true }
+    Component.onCompleted: Qt.callLater(enableTarget)
+
     function onAppsChanged() { root.searchCache = ({}); if (root.host) root.host.requery({ provider: root.provider.id }) }
   }
 
